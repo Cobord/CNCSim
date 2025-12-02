@@ -25,9 +25,7 @@ def symplectic_inner_product(u: np.ndarray, v: np.ndarray) -> int:
     return (uz.dot(vx) - ux.dot(vz)) % 2
 
 
-def beta(
-    u: np.ndarray, v: np.ndarray, skip_commutation_check: bool = False
-) -> int:
+def beta(u: np.ndarray, v: np.ndarray, skip_commutation_check: bool = False) -> int:
     """
     Computes the beta value which determines the sign of the product of two
     commuting Pauli operators.
@@ -125,9 +123,7 @@ def pauli_str_to_binary_vec(pauli_str: str) -> np.ndarray:
         elif op == "I":
             pass
         else:
-            raise ValueError(
-                "Invalid Pauli string. It must contain only X, Y, Z, I."
-            )
+            raise ValueError("Invalid Pauli string. It must contain only X, Y, Z, I.")
 
     return np.concatenate((x_part, z_part))
 
@@ -195,14 +191,14 @@ def find_m_from_omega_size(n: int, omega_size: int) -> int:
         ValueError: If no valid m (m > n) is found.
     """
     for m in range(n + 1):
-        if ((m + 1) * (2 ** (n + 1 - m)) == omega_size):
+        if (m + 1) * (2 ** (n + 1 - m)) == omega_size:
             return m
 
     raise ValueError("Not a valid size for Omega")
 
 
 def find_commuting_elements(
-    vectors: list[np.ndarray]
+    vectors: list[np.ndarray],
 ) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """
     Seperates the list of vectors to the ones that commute with the all
@@ -226,9 +222,7 @@ def find_commuting_elements(
     # Find vectors that commute with all other vectors
     for v in vectors:
         # A vector is isotropic if it commutes with every vector in the set
-        if all(
-            symplectic_inner_product(v, np.array(w)) == 0 for w in vector_set
-        ):
+        if all(symplectic_inner_product(v, np.array(w)) == 0 for w in vector_set):
             isotropic_set.add(tuple(v.tolist()))
 
     # Find the complementary elements (non-isotropic)
@@ -241,9 +235,7 @@ def find_commuting_elements(
     return isotropic_elements, non_isotropic_elements
 
 
-def find_jw_elements(
-    non_stabilizer_vectors: list[np.ndarray]
-) -> list[np.ndarray]:
+def find_jw_elements(non_stabilizer_vectors: list[np.ndarray]) -> list[np.ndarray]:
     """
     Finds a set of jw elements from the list of non-stabilizer vectors.
 
@@ -258,15 +250,13 @@ def find_jw_elements(
 
     while len(vectors) > 0:
         v = vectors.pop()
-        commuting_coset = {
-            w for w in vectors if symplectic_inner_product(v, w) == 0
-        }
+        commuting_coset = {w for w in vectors if symplectic_inner_product(v, w) == 0}
         jw_elements.append(v)
         vectors -= commuting_coset
 
     # To make sure they are in JW elements form we need remove the last element
     # and add the sum of the rest of the elements instead
-    jw_elements[-1] = (sum(jw_elements[:-1]) % 2)
+    jw_elements[-1] = sum(jw_elements[:-1]) % 2
 
     return jw_elements
 
@@ -355,16 +345,12 @@ def find_independent_subset(vectors: list[np.ndarray]) -> np.ndarray:
         if any(np.array_equal(v, row) for row in reduced_matrix):
             independent_subset.append(v)
             # Remove the row to avoid duplicates
-            reduced_matrix = reduced_matrix[
-                ~np.all(reduced_matrix == v, axis=1)
-            ]
+            reduced_matrix = reduced_matrix[~np.all(reduced_matrix == v, axis=1)]
 
     return np.array(independent_subset, dtype=int)
 
 
-def find_complementary_subspace(
-    v_basis: list[np.ndarray], n: int
-) -> np.ndarray:
+def find_complementary_subspace(v_basis: list[np.ndarray], n: int) -> np.ndarray:
     """
     Finds a basis for the complement subspace W such that U = V ⊕ W.
 
@@ -425,12 +411,10 @@ def generate_destabilizer_basis(
     new_destabilizer_basis = []
 
     for v in d_basis:
-        commuting_vectors = [
-            w for w in w_basis
-            if symplectic_inner_product(v, w) == 0
-        ]
+        commuting_vectors = [w for w in w_basis if symplectic_inner_product(v, w) == 0]
         anticommuting_vectors = [
-            w for w in w_basis
+            w
+            for w in w_basis
             if not any(np.array_equal(w, cv) for cv in commuting_vectors)
         ]
 
@@ -479,9 +463,9 @@ def symplectic_gram_schmidt(
         found_pair = False
 
         for i, v in enumerate(old_basis1):
-            commutations = np.array([
-                symplectic_inner_product(v, w) for w in old_basis2
-            ])
+            commutations = np.array(
+                [symplectic_inner_product(v, w) for w in old_basis2]
+            )
 
             # Check if anticommuting vector exists
             if not np.any(commutations):
@@ -499,12 +483,15 @@ def symplectic_gram_schmidt(
 
             # Modify remaining vectors
             old_basis1 = [
-                (u + symplectic_inner_product(u, w) * v) % 2
-                for u in old_basis1
+                (u + symplectic_inner_product(u, w) * v) % 2 for u in old_basis1
             ]
             old_basis2 = [
-                (u + symplectic_inner_product(u, v) * w +
-                    symplectic_inner_product(u, w) * v) % 2
+                (
+                    u
+                    + symplectic_inner_product(u, v) * w
+                    + symplectic_inner_product(u, w) * v
+                )
+                % 2
                 for u in old_basis2
             ]
 
@@ -560,100 +547,106 @@ def is_symplectic(U: np.ndarray, V: np.ndarray, S: np.ndarray) -> bool:
     return np.all(symplectic_check == np.eye(dim_U, dtype=int))
 
 
-def left_compose(tableau1,tableau2,m1,m2):
+def left_compose(tableau1, tableau2, m1, m2):
 
     # check if composition is valid:
     if m1 != 0:
         raise ValueError("Composition is not valid. Left tableau must be a stabilizer.")
 
     # qubit numbers:
-    n1 = int((tableau1.shape[1]-1)/2)
-    n2 = int((tableau2.shape[1]-1)/2)
+    n1 = int((tableau1.shape[1] - 1) / 2)
+    n2 = int((tableau2.shape[1] - 1) / 2)
 
     # total rows and columns:
-    rows1 = tableau1.shape[0]; cols1 = tableau1.shape[1]
-    rows2 = tableau2.shape[0]; cols2 = tableau2.shape[1]
+    rows1 = tableau1.shape[0]
+    cols1 = tableau1.shape[1]
+    rows2 = tableau2.shape[0]
+    cols2 = tableau2.shape[1]
 
     # initialize tableau:
-    tableau = np.empty((rows1+rows2,cols1+cols2-1),dtype = int)
+    tableau = np.empty((rows1 + rows2, cols1 + cols2 - 1), dtype=int)
 
     # separate into x-z pieces:
-    _tableau1_x = np.concatenate((tableau1[:,:n1],np.zeros((rows1,n2))),axis=1)
-    _tableau1_z = np.concatenate((tableau1[:,n1:-1],np.zeros((rows1,n2))),axis=1)
-    _tableau1 = np.concatenate((_tableau1_x,_tableau1_z),axis=1)
-    _tableau1 = np.concatenate((_tableau1,tableau1[:,-1].reshape(rows1,1)),axis=1)
+    _tableau1_x = np.concatenate((tableau1[:, :n1], np.zeros((rows1, n2))), axis=1)
+    _tableau1_z = np.concatenate((tableau1[:, n1:-1], np.zeros((rows1, n2))), axis=1)
+    _tableau1 = np.concatenate((_tableau1_x, _tableau1_z), axis=1)
+    _tableau1 = np.concatenate((_tableau1, tableau1[:, -1].reshape(rows1, 1)), axis=1)
 
-    _tableau2_x = np.concatenate((np.zeros((rows2,n1)),tableau2[:,:n2]),axis=1)
-    _tableau2_z = np.concatenate((np.zeros((rows2,n1)),tableau2[:,n2:-1]),axis=1)
-    _tableau2 = np.concatenate((_tableau2_x,_tableau2_z),axis=1)
-    _tableau2 = np.concatenate((_tableau2,tableau2[:,-1].reshape(rows2,1)),axis=1)
+    _tableau2_x = np.concatenate((np.zeros((rows2, n1)), tableau2[:, :n2]), axis=1)
+    _tableau2_z = np.concatenate((np.zeros((rows2, n1)), tableau2[:, n2:-1]), axis=1)
+    _tableau2 = np.concatenate((_tableau2_x, _tableau2_z), axis=1)
+    _tableau2 = np.concatenate((_tableau2, tableau2[:, -1].reshape(rows2, 1)), axis=1)
 
     # stack: destabilizer1 (n1), destabilizer2 (n2-m2)
-    tableau[:n1,:] = _tableau1[:n1,:]
-    tableau[n1:(n1+n2-m2),:] = _tableau2[:(n2-m2),:]
+    tableau[:n1, :] = _tableau1[:n1, :]
+    tableau[n1 : (n1 + n2 - m2), :] = _tableau2[: (n2 - m2), :]
 
     # stack: stabilizer1 (n1), stabilizer2 (n2-m2)
-    tableau[(n1+n2-m2):(2*n1+n2-m2),:] = _tableau1[n1:,:]
-    tableau[(2*n1+n2-m2):(2*(n1+n2-m2)),:] = _tableau2[(n2-m2):2*(n2-m2),:]
+    tableau[(n1 + n2 - m2) : (2 * n1 + n2 - m2), :] = _tableau1[n1:, :]
+    tableau[(2 * n1 + n2 - m2) : (2 * (n1 + n2 - m2)), :] = _tableau2[
+        (n2 - m2) : 2 * (n2 - m2), :
+    ]
 
     # stack: jw (2m2)
-    tableau[(2*(n1+n2-m2)):,:] = _tableau2[2*(n2-m2):,:]
+    tableau[(2 * (n1 + n2 - m2)) :, :] = _tableau2[2 * (n2 - m2) :, :]
 
     return tableau
 
 
-def right_compose(tableau1,tableau2,m1,m2):
+def right_compose(tableau1, tableau2, m1, m2):
 
     # check if composition is valid:
     if m2 != 0:
-        raise ValueError("Composition is not valid. Right tableau must be a stabilizer.")
+        raise ValueError(
+            "Composition is not valid. Right tableau must be a stabilizer."
+        )
 
     # qubit numbers:
-    n1 = int((tableau1.shape[1]-1)/2)
-    n2 = int((tableau2.shape[1]-1)/2)
+    n1 = int((tableau1.shape[1] - 1) / 2)
+    n2 = int((tableau2.shape[1] - 1) / 2)
 
     # total rows and columns:
-    rows1 = tableau1.shape[0]; cols1 = tableau1.shape[1]
-    rows2 = tableau2.shape[0]; cols2 = tableau2.shape[1]
+    rows1 = tableau1.shape[0]
+    cols1 = tableau1.shape[1]
+    rows2 = tableau2.shape[0]
+    cols2 = tableau2.shape[1]
 
     # initialize tableau:
-    tableau = np.empty((rows1+rows2,cols1+cols2-1),dtype = int)
+    tableau = np.empty((rows1 + rows2, cols1 + cols2 - 1), dtype=int)
 
     # separate tableau1 into x-z pieces and recombine
-    _tableau1_x = np.concatenate((tableau1[:,:n1],np.zeros((rows1,n2))),axis=1)
-    _tableau1_z = np.concatenate((tableau1[:,n1:-1],np.zeros((rows1,n2))),axis=1)
-    _tableau1 = np.concatenate((_tableau1_x,_tableau1_z),axis=1)
-    _tableau1 = np.concatenate((_tableau1,tableau1[:,-1].reshape(rows1,1)),axis=1)
+    _tableau1_x = np.concatenate((tableau1[:, :n1], np.zeros((rows1, n2))), axis=1)
+    _tableau1_z = np.concatenate((tableau1[:, n1:-1], np.zeros((rows1, n2))), axis=1)
+    _tableau1 = np.concatenate((_tableau1_x, _tableau1_z), axis=1)
+    _tableau1 = np.concatenate((_tableau1, tableau1[:, -1].reshape(rows1, 1)), axis=1)
 
     # separate tableau2 into x-z pieces and recombine:
-    _tableau2_x = np.concatenate((np.zeros((rows2,n1)),tableau2[:,:n2]),axis=1)
-    _tableau2_z = np.concatenate((np.zeros((rows2,n1)),tableau2[:,n2:-1]),axis=1)
-    _tableau2 = np.concatenate((_tableau2_x,_tableau2_z),axis=1)
-    _tableau2 = np.concatenate((_tableau2,tableau2[:,-1].reshape(rows2,1)),axis=1)
+    _tableau2_x = np.concatenate((np.zeros((rows2, n1)), tableau2[:, :n2]), axis=1)
+    _tableau2_z = np.concatenate((np.zeros((rows2, n1)), tableau2[:, n2:-1]), axis=1)
+    _tableau2 = np.concatenate((_tableau2_x, _tableau2_z), axis=1)
+    _tableau2 = np.concatenate((_tableau2, tableau2[:, -1].reshape(rows2, 1)), axis=1)
 
     # stack: destabilizer1 (n2), destabilizer2 (n1-m1)
-    tableau[:n2,:] = _tableau2[:n2,:]
-    tableau[n2:(n1+n2-m1),:] = _tableau1[:(n1-m1),:]
+    tableau[:n2, :] = _tableau2[:n2, :]
+    tableau[n2 : (n1 + n2 - m1), :] = _tableau1[: (n1 - m1), :]
 
     # stack: stabilizer1 (n2), stabilizer2 (n1-m1)
-    tableau[(n1+n2-m1):(n1+2*n2-m1),:] = _tableau2[n2:,:]
-    tableau[(n1+2*n2-m1):(2*(n1+n2-m1)),:] = _tableau1[(n1-m1):2*(n1-m1),:]
+    tableau[(n1 + n2 - m1) : (n1 + 2 * n2 - m1), :] = _tableau2[n2:, :]
+    tableau[(n1 + 2 * n2 - m1) : (2 * (n1 + n2 - m1)), :] = _tableau1[
+        (n1 - m1) : 2 * (n1 - m1), :
+    ]
 
     # stack: jw (2m1)
-    tableau[(2*(n1+n2-m1)):,:] = _tableau1[2*(n1-m1):,:]
-    
+    tableau[(2 * (n1 + n2 - m1)) :, :] = _tableau1[2 * (n1 - m1) :, :]
+
     return tableau
 
 
-def compose_tableaus(tableau1,tableau2,m1,m2):
+def compose_tableaus(tableau1, tableau2, m1, m2):
     # check if composition is valid:
-    if (m1!=0) and (m2 !=0):
+    if (m1 != 0) and (m2 != 0):
         raise ValueError("Composition is not valid. One of m1 or m2 must be 0.")
     elif (m1 == 0) and (m2 != 0):
-        return left_compose(tableau1,tableau2,m1,m2)
+        return left_compose(tableau1, tableau2, m1, m2)
     else:
-        return right_compose(tableau1,tableau2,m1,m2)
-
-
-
-
+        return right_compose(tableau1, tableau2, m1, m2)

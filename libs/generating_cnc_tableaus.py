@@ -10,7 +10,7 @@ filename = "./keys/all_cnc_keys_4.h5"
 # dictionary for mapping Pauli coefficients to bits:
 to_bits = dict(zip([1, -1], [0, 1]))
 
-for n in range(2, K+1):
+for n in range(2, K + 1):
     print(f"Processing CNC vectors for n = {n}:\n")
 
     # generate symplectic form for n -qubits:
@@ -34,11 +34,7 @@ for n in range(2, K+1):
             for j in range((M.shape)[0])
             if M[j, i] != 0
         ]
-        gamma = [
-            to_bits[np.sign(M[j, i])]
-            for j in range((M.shape)[0])
-            if M[j, i] != 0
-        ]
+        gamma = [to_bits[np.sign(M[j, i])] for j in range((M.shape)[0]) if M[j, i] != 0]
 
         # Convert omega elements to tuples of int
         value_assignment = dict(
@@ -50,8 +46,7 @@ for n in range(2, K+1):
         m_array.append(m)
 
         # Determine the central elements and jw elements:
-        stabilizer_set, non_stabilizer_set = helper.find_commuting_elements(
-            omega)
+        stabilizer_set, non_stabilizer_set = helper.find_commuting_elements(omega)
 
         # Identify linearly independent vectors:
         stabilizer_gens = helper.find_independent_subset(stabilizer_set)
@@ -64,18 +59,16 @@ for n in range(2, K+1):
         normalizer_gens = np.concatenate((stabilizer_gens, jw_basis), axis=0)
 
         # Find vectors linearly indpendent from I_perp:
-        complement_vectors = helper.find_complementary_subspace(
-            normalizer_gens, n)
+        complement_vectors = helper.find_complementary_subspace(normalizer_gens, n)
 
         # Modify those vectors to commpute with W:
         destabilizer_gens = helper.generate_destabilizer_basis(
-            complement_vectors, jw_basis)
+            complement_vectors, jw_basis
+        )
 
         # By definition a symplectic basis exists from Stab \oplus Destab:
         stab, destab = helper.symplectic_gram_schmidt(
-            stabilizer_set,
-            helper.generate_subspace_efficient(destabilizer_gens),
-            n - m
+            stabilizer_set, helper.generate_subspace_efficient(destabilizer_gens), n - m
         )
 
         # Check that the vector space is symplectic:
@@ -101,7 +94,7 @@ for n in range(2, K+1):
         ).reshape(tableau.shape[0], 1)
 
         # Set destabilizer phases to 0
-        phases[:len(destab), :] = np.zeros((len(destab), 1), dtype=np.int64)
+        phases[: len(destab), :] = np.zeros((len(destab), 1), dtype=np.int64)
 
         # Append phases to tableau
         tableau = np.concatenate((tableau, phases), axis=1)
@@ -120,8 +113,7 @@ for n in range(2, K+1):
 
     # Convert to structured array with variable types
     combined = np.array(
-        results,
-        dtype=[('W', float), ('tableau', 'O'), ('n', int), ('m', int)]
+        results, dtype=[("W", float), ("tableau", "O"), ("n", int), ("m", int)]
     )
 
     print("Saving CNC tableaus.\n")

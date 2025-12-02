@@ -1,0 +1,8 @@
+Processing Stabilizer vectors for n = 1:
+
+Quantum state from decomposition agrees with theory? True 
+
+Stabilizer in decomposition: 1
+
+Quasiprobability weight: -0.20710678118654746
+

@@ -11,6 +11,7 @@ from src.tableau_helper_functions import (
     pauli_binary_vec_to_str,
     beta,
 )
+
 GF2 = galois.GF(2)
 
 
@@ -31,9 +32,7 @@ class CncSimulator:
             seed (Optional[int], optional): Seed for the random number
                 generator for reproducibility. Defaults to None.
         """
-        logging.debug(
-            f"Initializing CncSimulator with n={n}, m={m}, seed={seed}"
-        )
+        logging.debug(f"Initializing CncSimulator with n={n}, m={m}, seed={seed}")
         self._n = n
         self._m = m
         self._isotropic_dim = n - m
@@ -43,15 +42,11 @@ class CncSimulator:
         self._x_cols = self._tableau[:, :n]
         self._z_cols = self._tableau[:, n:-1]
         self._phase_col = self._tableau[:, -1]
-        self._destabilizer_rows = self._tableau_without_phase[
-            : self.isotropic_dim
-        ]
+        self._destabilizer_rows = self._tableau_without_phase[: self.isotropic_dim]
         self._stabilizer_rows = self._tableau_without_phase[
-            self.isotropic_dim: 2 * self.isotropic_dim
+            self.isotropic_dim : 2 * self.isotropic_dim
         ]
-        self._jw_elements_rows = self._tableau_without_phase[
-            2 * self.isotropic_dim:
-        ]
+        self._jw_elements_rows = self._tableau_without_phase[2 * self.isotropic_dim :]
 
         self._rng = np.random.default_rng(seed)
 
@@ -68,17 +63,17 @@ class CncSimulator:
         new_instance = CncSimulator(self.n, self.m)
         new_instance._tableau = copy.deepcopy(self._tableau)
         new_instance._tableau_without_phase = new_instance._tableau[:, :-1]
-        new_instance._x_cols = new_instance._tableau[:, :self.n]
-        new_instance._z_cols = new_instance._tableau[:, self.n:-1]
+        new_instance._x_cols = new_instance._tableau[:, : self.n]
+        new_instance._z_cols = new_instance._tableau[:, self.n : -1]
         new_instance._phase_col = new_instance._tableau[:, -1]
         new_instance._destabilizer_rows = new_instance._tableau_without_phase[
             : self.isotropic_dim
         ]
         new_instance._stabilizer_rows = new_instance._tableau_without_phase[
-            self.isotropic_dim: 2 * self.isotropic_dim
+            self.isotropic_dim : 2 * self.isotropic_dim
         ]
         new_instance._jw_elements_rows = new_instance._tableau_without_phase[
-            2 * self.isotropic_dim:
+            2 * self.isotropic_dim :
         ]
 
         return new_instance
@@ -99,9 +94,9 @@ class CncSimulator:
             return NotImplemented
 
         return (
-            self._n == other._n and
-            self._m == other._m and
-            np.array_equal(self._tableau, other._tableau)
+            self._n == other._n
+            and self._m == other._m
+            and np.array_equal(self._tableau, other._tableau)
         )
 
     def __str__(self) -> str:
@@ -122,9 +117,7 @@ class CncSimulator:
         ]
         # Join all destabilizer strings with commas and enclose them
         # within angle brackets
-        formatted_destabilizers = (
-            f"Destabilizers: <{', '.join(destabilizer_strings)}>"
-        )
+        formatted_destabilizers = f"Destabilizers: <{', '.join(destabilizer_strings)}>"
 
         # Convert each stabilizer string to a string representation
         stabilizer_strings = [
@@ -137,9 +130,7 @@ class CncSimulator:
         ]
         # Join all stabilizer strings with commas and enclose them
         # within angle brackets
-        formatted_stabilizers = (
-            f"Stabilizers: <{', '.join(stabilizer_strings)}>"
-        )
+        formatted_stabilizers = f"Stabilizers: <{', '.join(stabilizer_strings)}>"
 
         # Convert each JW element to a string representation
         jw_element_strings = [
@@ -151,16 +142,14 @@ class CncSimulator:
             for i, s in enumerate(jw_element_strings)
         ]
         # Join all JW element strings with commas and enclose them
-        formatted_jw_elements = (
-            f"JW Elements: {', '.join(jw_element_strings)}"
-        )
+        formatted_jw_elements = f"JW Elements: {', '.join(jw_element_strings)}"
 
         return "\n".join(
             [
                 title,
                 formatted_destabilizers,
                 formatted_stabilizers,
-                formatted_jw_elements
+                formatted_jw_elements,
             ]
         )
 
@@ -205,10 +194,10 @@ class CncSimulator:
             : instance.isotropic_dim
         ]
         instance._stabilizer_rows = instance._tableau_without_phase[
-            instance.isotropic_dim: 2 * instance.isotropic_dim
+            instance.isotropic_dim : 2 * instance.isotropic_dim
         ]
         instance._jw_elements_rows = instance._tableau_without_phase[
-            2 * instance.isotropic_dim:
+            2 * instance.isotropic_dim :
         ]
 
         return instance
@@ -243,95 +232,83 @@ class CncSimulator:
 
         # Check commutation relations
         commutation_matrix = (
-            tableau_without_phase @ symplectic_matrix(n) @
-            tableau_without_phase.T
+            tableau_without_phase @ symplectic_matrix(n) @ tableau_without_phase.T
         ) % 2
 
         destabilizer_destabilizer_commutations = commutation_matrix[
-            : isotropic_dim, : isotropic_dim
+            :isotropic_dim, :isotropic_dim
         ]
         if not np.array_equal(
             destabilizer_destabilizer_commutations,
-            np.zeros((isotropic_dim, isotropic_dim))
+            np.zeros((isotropic_dim, isotropic_dim)),
         ):
             logging.info("Destabilizers do not commute with each other.")
             return False
 
         destabilizer_stabilizer_commutations = commutation_matrix[
-            : isotropic_dim, isotropic_dim: 2 * isotropic_dim
+            :isotropic_dim, isotropic_dim : 2 * isotropic_dim
         ]
         if not np.array_equal(
-            destabilizer_stabilizer_commutations,
-            np.eye(isotropic_dim)
+            destabilizer_stabilizer_commutations, np.eye(isotropic_dim)
         ):
             logging.info(
-                "Destabilizier and stabilizer bases do not form "
-                "symplectic bases."
-                )
+                "Destabilizier and stabilizer bases do not form " "symplectic bases."
+            )
             return False
 
         destabilizer_jw_elements_commutations = commutation_matrix[
-            : isotropic_dim, 2 * isotropic_dim:
+            :isotropic_dim, 2 * isotropic_dim :
         ]
         if not np.array_equal(
-            destabilizer_jw_elements_commutations,
-            np.zeros((isotropic_dim, 2*m + 1))
+            destabilizer_jw_elements_commutations, np.zeros((isotropic_dim, 2 * m + 1))
         ):
             logging.info("Destabilizers do not commute with JW elements.")
             return False
 
         stabilizer_stabilizer_commutations = commutation_matrix[
-            isotropic_dim: 2 * isotropic_dim, isotropic_dim: 2 * isotropic_dim
+            isotropic_dim : 2 * isotropic_dim, isotropic_dim : 2 * isotropic_dim
         ]
         if not np.array_equal(
-            stabilizer_stabilizer_commutations,
-            np.zeros((isotropic_dim, isotropic_dim))
+            stabilizer_stabilizer_commutations, np.zeros((isotropic_dim, isotropic_dim))
         ):
             logging.info("Stabilizers do not commute with each other.")
             return False
 
         stabilizer_jw_elements_commutations = commutation_matrix[
-            isotropic_dim: 2 * isotropic_dim, 2 * isotropic_dim:
+            isotropic_dim : 2 * isotropic_dim, 2 * isotropic_dim :
         ]
         if not np.array_equal(
-            stabilizer_jw_elements_commutations,
-            np.zeros((isotropic_dim, 2*m + 1))
+            stabilizer_jw_elements_commutations, np.zeros((isotropic_dim, 2 * m + 1))
         ):
             logging.info("Stabilizers do not commute with JW elements.")
             return False
 
         jw_elements_jw_elements_commutations = commutation_matrix[
-            2 * isotropic_dim:, 2 * isotropic_dim:
+            2 * isotropic_dim :, 2 * isotropic_dim :
         ]
-        expected = np.ones((2*m + 1, 2*m + 1), dtype=np.uint8)
-        expected -= np.eye(2*m + 1, dtype=np.uint8)
+        expected = np.ones((2 * m + 1, 2 * m + 1), dtype=np.uint8)
+        expected -= np.eye(2 * m + 1, dtype=np.uint8)
         if not np.array_equal(jw_elements_jw_elements_commutations, expected):
             logging.info("JW elements do not anticommute with each other.")
             return False
 
         # Check independence
-        destabilizer_rows = GF2(
-            tableau_without_phase[: isotropic_dim]
-            )
+        destabilizer_rows = GF2(tableau_without_phase[:isotropic_dim])
         if np.linalg.matrix_rank(destabilizer_rows) != isotropic_dim:
             logging.info("Destabilizer rows are not linearly independent.")
             return False
 
-        stabilizer_rows = GF2(
-            tableau_without_phase[isotropic_dim: 2*isotropic_dim]
-            )
+        stabilizer_rows = GF2(tableau_without_phase[isotropic_dim : 2 * isotropic_dim])
         if np.linalg.matrix_rank(stabilizer_rows) != isotropic_dim:
             logging.info("Stabilizer rows are not linearly independent.")
             return False
-        jw_elements_rows = GF2(
-            tableau_without_phase[2*isotropic_dim:]
-            )
-        if np.linalg.matrix_rank(jw_elements_rows) != 2*m:
+        jw_elements_rows = GF2(tableau_without_phase[2 * isotropic_dim :])
+        if np.linalg.matrix_rank(jw_elements_rows) != 2 * m:
             logging.info("JW elements rows do not have rank 2m.")
             return False
 
         all_rows = GF2(tableau_without_phase)
-        if np.linalg.matrix_rank(all_rows) != 2*n:
+        if np.linalg.matrix_rank(all_rows) != 2 * n:
             logging.info("All rows do not span the whole space.")
             return False
 
@@ -404,8 +381,8 @@ class CncSimulator:
 
         # Place the last row
         last_row = np.zeros(column_count, dtype=np.uint8)
-        last_row[n - m: n] = 1
-        last_row[2 * n - m: 2 * n] = 1
+        last_row[n - m : n] = 1
+        last_row[2 * n - m : 2 * n] = 1
         tableau[-1] = last_row
 
         return tableau
@@ -470,11 +447,7 @@ class CncSimulator:
         self._phase_col ^= (
             self._x_cols[:, control_qubit]
             & self._z_cols[:, target_qubit]
-            & (
-                self._x_cols[:, target_qubit]
-                ^ self._z_cols[:, control_qubit]
-                ^ True
-            )
+            & (self._x_cols[:, target_qubit] ^ self._z_cols[:, control_qubit] ^ True)
         )
         self._x_cols[:, target_qubit] ^= self._x_cols[:, control_qubit]
         self._z_cols[:, control_qubit] ^= self._z_cols[:, target_qubit]
@@ -538,26 +511,23 @@ class CncSimulator:
         assert len(measurement_basis) == 2 * self._n
 
         commutations_with_meas_basis = (
-            self._tableau_without_phase
-            @ (self._symplectic_matrix @ measurement_basis)
+            self._tableau_without_phase @ (self._symplectic_matrix @ measurement_basis)
         ) % 2
 
         commutation_with_destabilizers = commutations_with_meas_basis[
             : self.isotropic_dim
         ]
         commutation_with_stabilizers = commutations_with_meas_basis[
-            self.isotropic_dim: 2 * self.isotropic_dim
+            self.isotropic_dim : 2 * self.isotropic_dim
         ]
         commutation_with_jw_elements = commutations_with_meas_basis[
-            2 * self.isotropic_dim:
+            2 * self.isotropic_dim :
         ]
 
         commutes_with_stabilizer = np.all(commutation_with_stabilizers == 0)
         commutes_with_jw_elements = np.all(commutation_with_jw_elements == 0)
 
-        number_of_anticommuting_jw_elements = np.sum(
-            commutation_with_jw_elements
-        )
+        number_of_anticommuting_jw_elements = np.sum(commutation_with_jw_elements)
 
         outcome = 0
 
@@ -579,18 +549,14 @@ class CncSimulator:
         elif commutes_with_stabilizer and (
             number_of_anticommuting_jw_elements == 2 * self._m
         ):
-            logging.debug(
-                "Measurement basis is in Omega but not in the stabilizer."
-            )
+            logging.debug("Measurement basis is in Omega but not in the stabilizer.")
             # Find the unique JW element that commutes with
             # the measurement basis
             indices = np.where(commutation_with_jw_elements == 0)[0]
             if indices.size > 0:
                 k = indices[0]
             else:
-                raise RuntimeError(
-                    "No JW element commutes with the measurement basis."
-                )
+                raise RuntimeError("No JW element commutes with the measurement basis.")
             a_k = self._jw_elements_rows[k]
             temp_vec = a_k
             # set outcome as the phase of the JW element a_k
@@ -617,8 +583,7 @@ class CncSimulator:
         # but not in Omega
         elif commutes_with_stabilizer:
             logging.debug(
-                "Measurement basis commutes with "
-                "the stabilizer but not in Omega."
+                "Measurement basis commutes with " "the stabilizer but not in Omega."
             )
             t = int(number_of_anticommuting_jw_elements // 2)
 
@@ -644,9 +609,7 @@ class CncSimulator:
                 ):
                     max_anticommuting_index -= 1
 
-                if min_commuting_index < 2 * t and (
-                    max_anticommuting_index >= 2 * t
-                ):
+                if min_commuting_index < 2 * t and (max_anticommuting_index >= 2 * t):
                     # Find their index in the tableau and swap rows
                     i = min_commuting_index + 2 * self.isotropic_dim
                     j = max_anticommuting_index + 2 * self.isotropic_dim
@@ -658,12 +621,10 @@ class CncSimulator:
             anticomm_jw_indexes = range(
                 2 * self.isotropic_dim, 2 * self.isotropic_dim + 2 * t
             )
-            comm_jw_indexes = range(
-                2 * self.isotropic_dim + 2 * t, 2 * self.n + 1
-            )
+            comm_jw_indexes = range(2 * self.isotropic_dim + 2 * t, 2 * self.n + 1)
 
             # New stabilizer, bar_b:
-            for i in range(1, 2*t):
+            for i in range(1, 2 * t):
                 self._row_add_without_phase(
                     anticomm_jw_indexes[0], anticomm_jw_indexes[i]
                 )
@@ -685,20 +646,22 @@ class CncSimulator:
             # Find new stabilizers/destabilizers
             for i in range(1, t):
                 # New stabilizer:
-                self._tableau_without_phase[anticomm_jw_indexes[2*i]] ^= scratch
+                self._tableau_without_phase[anticomm_jw_indexes[2 * i]] ^= scratch
                 # New destabilizer:
-                self._tableau_without_phase[anticomm_jw_indexes[2*i+1]] ^= scratch
+                self._tableau_without_phase[anticomm_jw_indexes[2 * i + 1]] ^= scratch
 
-                if i < t-1:
-                    scratch ^= self._tableau_without_phase[anticomm_jw_indexes[2*i]]
-                    scratch ^= self._tableau_without_phase[anticomm_jw_indexes[2*i+1]]
+                if i < t - 1:
+                    scratch ^= self._tableau_without_phase[anticomm_jw_indexes[2 * i]]
+                    scratch ^= self._tableau_without_phase[
+                        anticomm_jw_indexes[2 * i + 1]
+                    ]
 
                 # assign phase to new stabilizers:
                 phase_bit = self._rng.integers(0, 2, dtype=np.uint8)
-                self._phase_col[anticomm_jw_indexes[2*i]] = phase_bit
+                self._phase_col[anticomm_jw_indexes[2 * i]] = phase_bit
 
                 # assign zero to new destabilizers:
-                self._phase_col[anticomm_jw_indexes[2*i+1]] = np.uint8(0)
+                self._phase_col[anticomm_jw_indexes[2 * i + 1]] = np.uint8(0)
 
             # Rearrange stabilizers and destabilizers
             previous_stabilizer_indexes = [
@@ -706,60 +669,45 @@ class CncSimulator:
             ]
 
             new_destabilizer_indexes = [
-                2*self._isotropic_dim+2*i+1
-                for i in range(t)
+                2 * self._isotropic_dim + 2 * i + 1 for i in range(t)
             ]
 
-            new_stabilizer_indexes = [
-                2*self._isotropic_dim+2*i
-                for i in range(t)
-            ]
+            new_stabilizer_indexes = [2 * self._isotropic_dim + 2 * i for i in range(t)]
 
             target_destabilizer_indexes = [
-                i for i in range(
-                    2 * self._isotropic_dim,
-                    2 * self.isotropic_dim + t
-                )
+                i for i in range(2 * self._isotropic_dim, 2 * self.isotropic_dim + t)
             ]
             target_stabilizer_indexes = [
-                i for i in range(
-                    2*self._isotropic_dim+t,
-                    2 * self.isotropic_dim + 2*t
+                i
+                for i in range(
+                    2 * self._isotropic_dim + t, 2 * self.isotropic_dim + 2 * t
                 )
             ]
 
             # put new stabilizers and destabilizers in consecutive indices:
-            self._tableau[
-                target_stabilizer_indexes + target_destabilizer_indexes
-            ] = self._tableau[
-                new_stabilizer_indexes + new_destabilizer_indexes
-            ]
+            self._tableau[target_stabilizer_indexes + target_destabilizer_indexes] = (
+                self._tableau[new_stabilizer_indexes + new_destabilizer_indexes]
+            )
 
             # put new stabilizers/destabilizers into last t rows
-            self._tableau[
-                previous_stabilizer_indexes + target_destabilizer_indexes
-            ] = self._tableau[
-                target_destabilizer_indexes + previous_stabilizer_indexes
-            ]
+            self._tableau[previous_stabilizer_indexes + target_destabilizer_indexes] = (
+                self._tableau[target_destabilizer_indexes + previous_stabilizer_indexes]
+            )
 
             # Update tableau variables and subtables
             self._m -= t
             self._isotropic_dim = self.n - self.m
-            self._destabilizer_rows = self._tableau_without_phase[
-                : self.isotropic_dim
-            ]
+            self._destabilizer_rows = self._tableau_without_phase[: self.isotropic_dim]
             self._stabilizer_rows = self._tableau_without_phase[
-                self.isotropic_dim: 2 * self.isotropic_dim
+                self.isotropic_dim : 2 * self.isotropic_dim
             ]
             self._jw_elements_rows = self._tableau_without_phase[
-                2 * self.isotropic_dim:
+                2 * self.isotropic_dim :
             ]
 
         # Case 4: Measurement basis does not commute with the stabilizer
         else:
-            logging.debug(
-                "Measurement basis does not commute with the stabilizer."
-            )
+            logging.debug("Measurement basis does not commute with the stabilizer.")
             # Find the element in the stabilizer with the least index that
             # anticommutes with the measurement basis
             indices = np.where(commutation_with_stabilizers == 1)[0]
@@ -767,8 +715,7 @@ class CncSimulator:
                 k = indices[0]
             else:
                 raise RuntimeError(
-                    "No Stabilizer element anticommutes with the "
-                    "measurement basis."
+                    "No Stabilizer element anticommutes with the " "measurement basis."
                 )
             p = k + self.isotropic_dim
 

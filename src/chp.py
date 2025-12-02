@@ -16,8 +16,8 @@ class ChpSimulator:
     def __init__(self, num_qubits):
         self._n = num_qubits
         self._table = np.eye(2 * num_qubits + 1, dtype=bool)
-        self._x = self._table[:, :self._n]
-        self._z = self._table[:, self._n:-1]
+        self._x = self._table[:, : self._n]
+        self._z = self._table[:, self._n : -1]
         self._r = self._table[:, -1]
 
     def cnot(self, control: int, target: int) -> None:
@@ -27,8 +27,11 @@ class ChpSimulator:
             control: The control qubit of the CNOT.
             target: The target qubit of the CNOT.
         """
-        self._r[:] ^= self._x[:, control] & self._z[:, target] & (
-                self._x[:, target] ^ self._z[:, control] ^ True)
+        self._r[:] ^= (
+            self._x[:, control]
+            & self._z[:, target]
+            & (self._x[:, target] ^ self._z[:, control] ^ True)
+        )
         self._x[:, target] ^= self._x[:, control]
         self._z[:, control] ^= self._z[:, target]
 
@@ -53,10 +56,9 @@ class ChpSimulator:
         self._r[:] ^= self._x[:, qubit] & self._z[:, qubit]
         self._z[:, qubit] ^= self._x[:, qubit]
 
-    def measure(self,
-                qubit: int,
-                *,
-                bias: Union[float, int, bool] = 0.5) -> 'MeasureResult':
+    def measure(
+        self, qubit: int, *, bias: Union[float, int, bool] = 0.5
+    ) -> "MeasureResult":
         """Computational basis (Z basis) measurement.
 
         Args:
@@ -72,27 +74,26 @@ class ChpSimulator:
         """
         n = self._n
         for p in range(n):
-            if self._x[p+n, qubit]:
+            if self._x[p + n, qubit]:
                 return self._measure_random(qubit, p, bias)
         return self._measure_determined(qubit)
 
-    def _measure_random(self,
-                        a: int,
-                        p: int,
-                        bias: Union[float, int, bool]) -> 'MeasureResult':
+    def _measure_random(
+        self, a: int, p: int, bias: Union[float, int, bool]
+    ) -> "MeasureResult":
         n = self._n
-        assert self._x[p+n, a]
+        assert self._x[p + n, a]
         self._table[p, :] = self._table[p + n, :]
         self._table[p + n, :] = 0
         self._z[p + n, a] = 1
         self._r[p + n] = random.random() < bias
 
-        for i in range(2*n):
+        for i in range(2 * n):
             if self._x[i, a] and i != p and i != p + n:
                 self._row_mult(i, p)
         return MeasureResult(value=self._r[p + n], determined=False)
 
-    def _measure_determined(self, a: int) -> 'MeasureResult':
+    def _measure_determined(self, a: int) -> "MeasureResult":
         n = self._n
         self._table[-1, :] = 0
         for i in range(n):
@@ -103,23 +104,22 @@ class ChpSimulator:
     def _row_product_sign(self, i: int, k: int) -> bool:
         """Determines the sign of two rows' Pauli Products."""
         pauli_phases = sum(
-            pauli_product_phase(self._x[i, j],
-                                self._z[i, j],
-                                self._x[k, j],
-                                self._z[k, j])
+            pauli_product_phase(
+                self._x[i, j], self._z[i, j], self._x[k, j], self._z[k, j]
+            )
             for j in range(self._n)
         )
-        assert not pauli_phases & 1, (
-            "Expected commuting rows but got {}, {} from \n{}".format(
-                i, k, self))
+        assert (
+            not pauli_phases & 1
+        ), "Expected commuting rows but got {}, {} from \n{}".format(i, k, self)
         p = (pauli_phases >> 1) & 1
         return bool(self._r[i] ^ self._r[k] ^ p)
 
     def _row_mult(self, i: int, k: int) -> None:
         """Multiplies row k's Paulis into row i's Paulis."""
         self._r[i] = self._row_product_sign(i, k)
-        self._x[i, :self._n] ^= self._x[k, :self._n]
-        self._z[i, :self._n] ^= self._z[k, :self._n]
+        self._x[i, : self._n] ^= self._x[k, : self._n]
+        self._z[i, : self._n] ^= self._z[k, : self._n]
 
     def __str__(self):
         """Represents the state as a list of Pauli products.
@@ -131,18 +131,18 @@ class ChpSimulator:
 
         def _cell(row: int, col: int) -> str:
             k = int(self._x[row, col]) + 2 * int(self._z[row, col])
-            return ['.', 'X', 'Z', 'Y'][k]
+            return [".", "X", "Z", "Y"][k]
 
         def _row(row: int) -> str:
-            result = '-' if self._r[row] else '+'
+            result = "-" if self._r[row] else "+"
             for col in range(self._n):
                 result += str(_cell(row, col))
             return result
 
         z_obs = [_row(row) for row in range(self._n)]
-        sep = ['-' * (self._n + 1)]
+        sep = ["-" * (self._n + 1)]
         x_obs = [_row(row) for row in range(self._n, 2 * self._n)]
-        return '\n'.join(z_obs + sep + x_obs)
+        return "\n".join(z_obs + sep + x_obs)
 
     def _repr_pretty_(self, p: Any, cycle: bool) -> None:
         p.text(str(self))
@@ -176,14 +176,14 @@ def pauli_product_phase(x1: bool, z1: bool, x2: bool, z2: bool) -> int:
         # No phase for XX = I
         # +1 phase for XY = iZ
         # -1 phase for XZ = -iY
-        return z2 and 2*int(x2) - 1
+        return z2 and 2 * int(x2) - 1
 
     if z1:  # Z gate.
         # No phase for ZI = Z
         # +1 phase for ZX = -iY
         # -1 phase for ZY = iX
         # No phase for ZZ = I
-        return x2 and 1 - 2*int(z2)
+        return x2 and 1 - 2 * int(z2)
 
     # Identity gate.
     return 0
@@ -207,10 +207,9 @@ class MeasureResult:
         return NotImplemented
 
     def __str__(self):
-        return '{} ({})'.format(self.value,
-                                ['random', 'determined'][self.determined])
+        return "{} ({})".format(self.value, ["random", "determined"][self.determined])
 
     def __repr__(self):
-        return 'MeasureResult(value={!r}, determined={!r})'.format(
-            self.value,
-            self.determined)
+        return "MeasureResult(value={!r}, determined={!r})".format(
+            self.value, self.determined
+        )

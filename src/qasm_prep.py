@@ -1,4 +1,5 @@
 import os
+
 """
 --------------------------------------------------------------------------------
 This module contains:
@@ -62,8 +63,10 @@ Last updated: 19/07/2022
 --------------------------------------------------------------------------------
 """
 
+
 class Error(Exception):
     """Base class for other exceptions."""
+
     pass
 
 
@@ -71,7 +74,10 @@ class RegisterInputError(Error):
     """Exception raised for errors associated with the registers of the input
     quantum circuit.
     """
-    def __init__(self, message="Invalid circuit form: registers are not correctly specified!"):
+
+    def __init__(
+        self, message="Invalid circuit form: registers are not correctly specified!"
+    ):
         self.message = message
         super().__init__(self.message)
 
@@ -80,18 +86,21 @@ class NonCliffordTGenInputError(Error):
     """Exception raised when the input circuit has operations other than the
     ones from the {H, S, CNOT, T} generating set.
     """
-    def __init__(self, message="Invalid circuit form: illegal operations are being used!"):
+
+    def __init__(
+        self, message="Invalid circuit form: illegal operations are being used!"
+    ):
         self.message = message
         super().__init__(self.message)
-
 
 
 class QuCirc:
     """
     This class represents a given Clifford+T input quantum circuit using an input QASM string.
-    
+
     The QASM string should be in the format produced by qc.qasm() in Qiskit versions < 1.0.
     """
+
     def __init__(self, qasm_string: str):
         """
         Initialize the QuCirc object with a QASM string.
@@ -101,10 +110,21 @@ class QuCirc:
         """
         self.qasm_string = qasm_string
         # Tokens used for processing the QASM input.
-        self.qasm_header = ['OPENQASM ', 'include ']
-        self.qasm_registers = ['qreg ', 'creg ']
-        self.qasm_allowed_operations = ['h ', 's ', 'cx ', 't ', 'measure ', 'barrier ']
-        self.qasm_all = ['OPENQASM ', 'include ', 'qreg ', 'creg ', 'h ', 's ', 'cx ', 't ', 'measure ', 'barrier ']
+        self.qasm_header = ["OPENQASM ", "include "]
+        self.qasm_registers = ["qreg ", "creg "]
+        self.qasm_allowed_operations = ["h ", "s ", "cx ", "t ", "measure ", "barrier "]
+        self.qasm_all = [
+            "OPENQASM ",
+            "include ",
+            "qreg ",
+            "creg ",
+            "h ",
+            "s ",
+            "cx ",
+            "t ",
+            "measure ",
+            "barrier ",
+        ]
 
     def get_circuit_data(self) -> list:
         """
@@ -114,7 +134,11 @@ class QuCirc:
             list: Non-blank, non-comment lines (each ending with a newline).
         """
         lines = self.qasm_string.splitlines()
-        processed = [line.strip() + "\n" for line in lines if line.strip() and not line.strip().startswith('//')]
+        processed = [
+            line.strip() + "\n"
+            for line in lines
+            if line.strip() and not line.strip().startswith("//")
+        ]
         return processed
 
     def verify_input_circuit(self) -> tuple:
@@ -134,9 +158,9 @@ class QuCirc:
                 t_count (int): Number of T gates.
                 measurement_count (int): Number of measurements.
         """
-        t_count = 0        # Count T gates.
-        mmt_count = 0      # Count measurements.
-        nr_qregs = 0       # Count quantum registers.
+        t_count = 0  # Count T gates.
+        mmt_count = 0  # Count measurements.
+        nr_qregs = 0  # Count quantum registers.
         circuit_header, circuit_registers, circuit_operations = [], [], []
         circuit_list = self.get_circuit_data()
 
@@ -149,31 +173,36 @@ class QuCirc:
                         circuit_registers.append(line)
                     elif token in self.qasm_allowed_operations:
                         circuit_operations.append(line)
-            if line.startswith('t '):
+            if line.startswith("t "):
                 t_count += 1
-            elif line.startswith('measure '):
+            elif line.startswith("measure "):
                 mmt_count += 1
-            elif line.startswith('qreg '):
+            elif line.startswith("qreg "):
                 # Extract the qubit count.
-                x = line.partition('[')
-                y = x[2].partition(']')
+                x = line.partition("[")
+                y = x[2].partition("]")
                 q_count = int(y[0])
                 nr_qregs += 1
 
-        if not (len(circuit_list) == len(circuit_header) + len(circuit_registers) + len(circuit_operations)):
+        if not (
+            len(circuit_list)
+            == len(circuit_header) + len(circuit_registers) + len(circuit_operations)
+        ):
             raise NonCliffordTGenInputError("Circuit contains disallowed operations!")
         elif not (len(circuit_registers) == 2 and nr_qregs == 1):
-            raise RegisterInputError("Circuit must have exactly one quantum and one classical register!")
+            raise RegisterInputError(
+                "Circuit must have exactly one quantum and one classical register!"
+            )
 
         # Retrieve original register names.
         qreg_name, creg_name = None, None
         for line in circuit_list:
-            if line.startswith('qreg '):
+            if line.startswith("qreg "):
                 parts = line.split()
-                qreg_name = parts[1].split('[')[0]
-            elif line.startswith('creg '):
+                qreg_name = parts[1].split("[")[0]
+            elif line.startswith("creg "):
                 parts = line.split()
-                creg_name = parts[1].split('[')[0]
+                creg_name = parts[1].split("[")[0]
             if qreg_name and creg_name:
                 break
 
@@ -181,14 +210,16 @@ class QuCirc:
         updated = []
         for line in circuit_list:
             if qreg_name:
-                line = line.replace(f'{qreg_name}[', 'q_stab[')
+                line = line.replace(f"{qreg_name}[", "q_stab[")
             if creg_name:
-                line = line.replace(f'{creg_name}[', 'c_stab[')
+                line = line.replace(f"{creg_name}[", "c_stab[")
             updated.append(line)
-        
+
         return updated, q_count, t_count, mmt_count
 
-    def msi_circuit(self, msi_clifford_file_loc=None, msi_clifford_file_name=None) -> str:
+    def msi_circuit(
+        self, msi_clifford_file_loc=None, msi_clifford_file_name=None
+    ) -> str:
         """
         Convert the circuit into a gadgetized (adaptive) Clifford circuit with magic state injection.
 
@@ -207,39 +238,42 @@ class QuCirc:
         circuit_list, q_count, t_count, mmt_count = self.verify_input_circuit()
 
         for line in circuit_list:
-            if line.startswith('cx '):
+            if line.startswith("cx "):
                 cx_count += 1
-            elif line.startswith('h ') or line.startswith('s '):
+            elif line.startswith("h ") or line.startswith("s "):
                 hs_count += 1
 
         # Insert auxiliary registers for magic state injection.
         for idx, line in enumerate(circuit_list):
-            if line.startswith('creg '):
-                circuit_list.insert(idx, f'qreg q_magic[{t_count}];\n')
-                circuit_list.insert(idx + 2, f'creg c_magic[{t_count}];\n')
+            if line.startswith("creg "):
+                circuit_list.insert(idx, f"qreg q_magic[{t_count}];\n")
+                circuit_list.insert(idx + 2, f"creg c_magic[{t_count}];\n")
                 break
 
         k = 0
         # Replace each T gate with a gadgetized version.
         for line in circuit_list.copy():
-            if line.startswith('t '):
+            if line.startswith("t "):
                 index = circuit_list.index(line)
-                x = line.partition('[')
-                y = x[2].partition(']')
+                x = line.partition("[")
+                y = x[2].partition("]")
                 i = y[0]
-                new_line = line.replace('t ', 'cx ').replace(';', f',q_magic[{k}];')
+                new_line = line.replace("t ", "cx ").replace(";", f",q_magic[{k}];")
                 circuit_list[index] = new_line
-                circuit_list.insert(index + 1, f'measure q_magic[{k}] -> c_magic[{k}];\n')
-                circuit_list.insert(index + 2, f'if(c_magic[{k}]==1) s q_stab[{i}];\n')
+                circuit_list.insert(
+                    index + 1, f"measure q_magic[{k}] -> c_magic[{k}];\n"
+                )
+                circuit_list.insert(index + 2, f"if(c_magic[{k}]==1) s q_stab[{i}];\n")
                 k += 1
 
         output_qasm = "".join(circuit_list)
 
         if msi_clifford_file_loc and msi_clifford_file_name:
-            if not msi_clifford_file_name.endswith('.qasm'):
-                msi_clifford_file_name += '.qasm'
-            with open(os.path.join(msi_clifford_file_loc, msi_clifford_file_name), 'w') as f:
+            if not msi_clifford_file_name.endswith(".qasm"):
+                msi_clifford_file_name += ".qasm"
+            with open(
+                os.path.join(msi_clifford_file_loc, msi_clifford_file_name), "w"
+            ) as f:
                 f.write(output_qasm)
 
         return output_qasm
-
