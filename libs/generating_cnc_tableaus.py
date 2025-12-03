@@ -1,3 +1,7 @@
+"""
+Generate and save CNC tableaus
+"""
+
 # pylint:disable=invalid-name
 from pathlib import Path
 import numpy as np
@@ -16,6 +20,7 @@ for n in range(2, K + 1):
     print(f"Processing CNC vectors for n = {n}:\n")
 
     # generate symplectic form for n -qubits:
+    # pylint:disable=duplicate-code
     symplectic_form = helper.symplectic_matrix(n)
 
     with h5py.File(filename, "r") as f:

@@ -1,13 +1,16 @@
-import re
-import copy
-import src.cnc_simulator as cnc
-import numpy as np
-
+"""
 #################################################################
 #                                                               #
 #                Functions for running QCM sim                  #
 #                                                               #
 #################################################################
+"""
+
+import re
+import copy
+from typing import List
+import numpy as np
+import src.cnc_simulator as cnc
 
 
 def is_msi_qasm(qasm_str: str) -> bool:
@@ -47,8 +50,9 @@ def extract_measured_qubit(line: str) -> dict | None:
         - qubit_index: Index of the measured qubit (as an integer)
         - classical_register: Name of the classical register receiving the measurement
         - classical_index: Index in the classical register (as an integer)
-        - register_type: Either "stabilizer" (if qubit_register is "q_stab") or "magic" (if "q_magic"),
-                         otherwise "unknown".
+        - register_type: Either "stabilizer" (if qubit_register is "q_stab")
+            or "magic" (if "q_magic"),
+            otherwise "unknown".
 
     Parameters
     ----------
@@ -103,7 +107,8 @@ def parse_conditional_command(line: str) -> dict | None:
     Returns
     -------
     dict or None
-        A dictionary with keys 'gate', 'target_register', and 'target_index' if parsing is successful;
+        A dictionary with keys 'gate', 'target_register',
+            and 'target_index' if parsing is successful;
         otherwise, None.
     """
     conditional_pattern = re.compile(
@@ -120,16 +125,20 @@ def parse_conditional_command(line: str) -> dict | None:
     return None
 
 
+# pylint:disable=too-many-locals, too-many-branches
 def apply_circuit(
-    circuit_list: list, q_count: int, t_count: int, cnc_tableau: cnc.CncSimulator
+    circuit_list: List[str], q_count: int, t_count: int, cnc_tableau: cnc.CncSimulator
 ) -> dict:
     """
-    Process a list of QASM lines and apply the corresponding gates and measurements on the CNC tableau.
+    Process a list of QASM lines and
+    apply the corresponding gates and measurements on the CNC tableau.
 
     This function iterates over the QASM lines (provided as a list of strings) and applies:
         - Hadamard (h) and Phase (s) gates on the stabilizer register (q_stab).
-        - CNOT (cx) gates, with special handling for magic qubits (q_magic) where an offset is applied.
-        - Measurement operations. For magic qubit measurements, it also processes the following conditional command.
+        - CNOT (cx) gates, with special handling for magic qubits (q_magic)
+            where an offset is applied.
+        - Measurement operations. For magic qubit measurements,
+            it also processes the following conditional command.
 
     Parameters
     ----------
@@ -148,9 +157,10 @@ def apply_circuit(
         A dictionary mapping measured stabilizer qubit indices to their measurement outcomes.
     """
     n_total = q_count + t_count
-    stabilizer_outcomes = dict()
-    ancilla_outcomes = dict()
+    stabilizer_outcomes = {}
+    ancilla_outcomes = {}
 
+    # pylint:disable=consider-using-enumerate
     for line_idx in range(len(circuit_list)):
         line = circuit_list[line_idx]
         if line.startswith("h "):
@@ -173,13 +183,23 @@ def apply_circuit(
                 j = int(z[0])
             elif y[0] == "q_magic":
                 j = int(z[0]) + q_count  # Offset for magic qubits
+            else:
+                raise ValueError(f"{line} but neither q_stab nor q_magic")
             cnc_tableau.apply_cnot(i, j)
         elif line.startswith("measure"):
             measurement = extract_measured_qubit(line)
+            if measurement is None:
+                raise ValueError(
+                    f"{line} starts with measure but is not the proper syntax for QASM measurement"
+                )
             basis = np.zeros(2 * n_total, dtype=int)
             q = measurement["qubit_index"]
             if measurement["qubit_register"] == "q_magic":
                 correction = parse_conditional_command(circuit_list[line_idx + 1])
+                if correction is None:
+                    raise ValueError(
+                        f"{circuit_list[line_idx + 1]} is not proper syntax for QASM conditional"
+                    )
                 basis[n_total + q + q_count] = 1
                 outcome = cnc_tableau.measure(basis)
                 ancilla_outcomes[measurement["qubit_index"]] = outcome

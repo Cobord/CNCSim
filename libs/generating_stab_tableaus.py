@@ -1,3 +1,7 @@
+"""
+Generate and save stabilizer tableaus
+"""
+
 # pylint:disable=invalid-name
 import contextlib
 import numpy as np
@@ -72,6 +76,7 @@ with open("generating_stab_tableaus.txt", "w", encoding="utf8") as f_out:
             # print("Quantum state from theory: \n")
             # print(rho_theoretical,"\n")
 
+            # pylint:disable=line-too-long
             print(
                 f"Quantum state from decomposition agrees with theory? {np.all(rho_decomposition == rho_theoretical)} \n"
             )

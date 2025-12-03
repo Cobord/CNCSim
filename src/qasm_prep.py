@@ -1,5 +1,3 @@
-import os
-
 """
 --------------------------------------------------------------------------------
 This module contains:
@@ -59,18 +57,20 @@ The methods within this class are:
 --------------------------------------------------------------------------------
 Author: F.C.R. Peres
 Creation date: 02/06/2021
-Last updated: 19/07/2022
+Last updated: 03/12/2025
 --------------------------------------------------------------------------------
 """
 
+import logging
+import os
+from typing import List, Optional, Tuple, cast
 
-class Error(Exception):
+
+class QASMPrepError(Exception):
     """Base class for other exceptions."""
 
-    pass
 
-
-class RegisterInputError(Error):
+class RegisterInputError(QASMPrepError):
     """Exception raised for errors associated with the registers of the input
     quantum circuit.
     """
@@ -82,7 +82,7 @@ class RegisterInputError(Error):
         super().__init__(self.message)
 
 
-class NonCliffordTGenInputError(Error):
+class NonCliffordTGenInputError(QASMPrepError):
     """Exception raised when the input circuit has operations other than the
     ones from the {H, S, CNOT, T} generating set.
     """
@@ -141,7 +141,8 @@ class QuCirc:
         ]
         return processed
 
-    def verify_input_circuit(self) -> tuple:
+    # pylint:disable=too-many-locals, too-many-branches
+    def verify_input_circuit(self) -> Tuple[List[str], int, int, int]:
         """
         Verify that the circuit defined by the QASM string is valid and update register names.
 
@@ -189,7 +190,17 @@ class QuCirc:
             == len(circuit_header) + len(circuit_registers) + len(circuit_operations)
         ):
             raise NonCliffordTGenInputError("Circuit contains disallowed operations!")
-        elif not (len(circuit_registers) == 2 and nr_qregs == 1):
+        if not (len(circuit_registers) == 2 and nr_qregs == 1):
+            raise RegisterInputError(
+                "Circuit must have exactly one quantum and one classical register!"
+            )
+        try:
+            # pylint:disable=used-before-assignment
+            q_count = cast(
+                int, q_count
+            )  # pyright: ignore[reportPossiblyUnboundVariable]
+        except UnboundLocalError:
+            # pylint:disable=raise-missing-from
             raise RegisterInputError(
                 "Circuit must have exactly one quantum and one classical register!"
             )
@@ -217,25 +228,33 @@ class QuCirc:
 
         return updated, q_count, t_count, mmt_count
 
+    # pylint:disable=too-many-locals
     def msi_circuit(
-        self, msi_clifford_file_loc=None, msi_clifford_file_name=None
+        self,
+        msi_clifford_file_loc: Optional[str] = None,
+        msi_clifford_file_name: Optional[str] = None,
     ) -> str:
         """
-        Convert the circuit into a gadgetized (adaptive) Clifford circuit with magic state injection.
+        Convert the circuit into a gadgetized (adaptive) Clifford circuit
+        with magic state injection.
 
-        The method inserts a new quantum register 'q_magic' and a classical register 'c_magic',
-        and replaces each T gate on q_stab with a gadget (using a CNOT, measurement, and conditional S gate).
+        The method inserts a new quantum register 'q_magic'
+        and a classical register 'c_magic',
+        and replaces each T gate on q_stab with a gadget
+        (using a CNOT, measurement, and conditional S gate).
 
         Args:
-            msi_clifford_file_loc (str, optional): If provided, the gadgetized circuit will also be saved here.
-            msi_clifford_file_name (str, optional): If provided, the output file name for the gadgetized circuit.
+            msi_clifford_file_loc (str, optional): If provided,
+                the gadgetized circuit will also be saved here.
+            msi_clifford_file_name (str, optional): If provided,
+                the output file name for the gadgetized circuit.
 
         Returns:
             str: The gadgetized circuit as a single QASM string.
         """
         cx_count = 0
         hs_count = 0
-        circuit_list, q_count, t_count, mmt_count = self.verify_input_circuit()
+        circuit_list, _q_count, t_count, _mmt_count = self.verify_input_circuit()
 
         for line in circuit_list:
             if line.startswith("cx "):
@@ -272,8 +291,17 @@ class QuCirc:
             if not msi_clifford_file_name.endswith(".qasm"):
                 msi_clifford_file_name += ".qasm"
             with open(
-                os.path.join(msi_clifford_file_loc, msi_clifford_file_name), "w"
+                os.path.join(msi_clifford_file_loc, msi_clifford_file_name),
+                "w",
+                encoding="utf8",
             ) as f:
                 f.write(output_qasm)
+        if msi_clifford_file_loc or msi_clifford_file_name:
+            logging.warning(
+                "You only provided one of the location and file name. "
+                "It sounds like you were trying to save the output QASM "
+                "with one of the two getting a default value. "
+                "But you have to provide both if you actually wanted to save it."
+            )
 
         return output_qasm

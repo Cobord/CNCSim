@@ -7,6 +7,7 @@ from typing import Protocol
 import numpy as np
 
 
+# pylint:disable=too-few-public-methods
 class ReprPretty(Protocol):
     """
     This can be used in _repr_pretty as the p argument

@@ -1,9 +1,14 @@
+"""
+Run the gadgetized (adaptive) Clifford circuit simulation and return measurement outcomes.
+"""
+
 from typing import Optional
-import numpy as np
 import os
 import re
 import time  # for timing
 import copy
+
+import numpy as np
 
 import src.qasm_prep as prep
 import src.qcm_functions as functions
@@ -12,6 +17,8 @@ import src.tableau_helper_functions as helper
 import src.cnc_simulator as cnc
 
 
+# pylint:disable=too-many-arguments,too-many-positional-arguments
+# pylint:disable=too-many-locals, too-many-branches, too-many-statements
 def run_qcm(
     msi_qasm_string: Optional[str] = None,
     file_loc: Optional[str] = None,
@@ -67,7 +74,8 @@ def run_qcm(
             - outputs : list
                 A list of tuples, each containing (outcome, sign) for each shot.
             - born_rule_estimates : list
-                A list of tuples (outcome, estimated value) computed using the negativity and outcomes.
+                A list of tuples (outcome, estimated value)
+                    computed using the negativity and outcomes.
             - shot_times : list
                 A list of elapsed times (in seconds) for each shot.
     """
@@ -86,7 +94,9 @@ def run_qcm(
             raise ValueError(
                 "File location and file names must be provided if no MSI QASM string is given."
             )
-        with open(os.path.join(file_loc, clifford_file_name), "r") as f:
+        with open(
+            os.path.join(file_loc, clifford_file_name), "r", encoding="utf8"
+        ) as f:
             msi_qasm_string = f.read()
         if not functions.is_msi_qasm(msi_qasm_string):
             qc = prep.QuCirc(msi_qasm_string)
@@ -110,8 +120,8 @@ def run_qcm(
     q_count = q_count_extracted
     t_count = t_count_extracted
 
-    cx_count = sum(1 for line in circuit_list if line.startswith("cx "))
-    hs_count = sum(
+    _cx_count = sum(1 for line in circuit_list if line.startswith("cx "))
+    _hs_count = sum(
         1 for line in circuit_list if line.startswith("h ") or line.startswith("s ")
     )
 
@@ -135,11 +145,13 @@ def run_qcm(
         stab_tableau.apply_hadamard(i)
 
     # Determine the number of simulation shots.
+    # pylint:disable=invalid-name
     if hoeffding:
         N = (negativity**2) * (2 / (epsilon**2)) * np.log(2 / prob_fail)
     else:
         N = shots
 
+    # pylint:disable=line-too-long
     print(
         "------------------------------\nInitial conditions for simulation:\n------------------------------\n"
     )
@@ -173,7 +185,7 @@ def run_qcm(
         "------------------------------\nOutputs of Simulation:\n------------------------------\n"
     )
     distinct_outcomes = set(outcomes)
-    counts = {item: outcomes.count(item) for item in distinct_outcomes}
+    _counts = {item: outcomes.count(item) for item in distinct_outcomes}
     avg_shot_time = np.mean(shot_times)
     print(f"Average time per shot: {avg_shot_time:.6f} seconds\n")
 
