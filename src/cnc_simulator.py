@@ -1,8 +1,17 @@
+"""
+Simulator of maximal CNC operators using tableau representation. The
+tableau representation contains the stabilizer, destabilizer, and JW
+elements of the CNC operator. Clifford gates, specifically CNOT, Hadamard,
+and Phase gates, can be applied to the simulator. Measurements can be
+performed in the Pauli basis.
+"""
+# pylint:disable=invalid-name, logging-fstring-interpolation
+
 from __future__ import annotations
 
 import copy
 import logging
-from typing import Optional
+from typing import Optional, cast
 
 import galois
 import numpy as np
@@ -15,6 +24,7 @@ from src.tableau_helper_functions import (
 GF2 = galois.GF(2)
 
 
+#pylint:disable=too-many-instance-attributes
 class CncSimulator:
     """Simulator of maximal CNC operators using tableau representation. The
     tableau representation contains the stabilizer, destabilizer, and JW
@@ -22,6 +32,22 @@ class CncSimulator:
     and Phase gates, can be applied to the simulator. Measurements can be
     performed in the Pauli basis.
     """
+
+    __slots__ = [
+        "_n",
+        "_m",
+        "_isotropic_dim",
+        "_symplectic_matrix",
+        "_tableau",
+        "_tableau_without_phase",
+        "_x_cols",
+        "_z_cols",
+        "_phase_col",
+        "_destabilizer_rows",
+        "_stabilizer_rows",
+        "_jw_elements_rows",
+        "_rng",
+    ]
 
     def __init__(self, n: int, m: int, seed: Optional[int] = None) -> None:
         """Initializes the CncSimulator.
@@ -38,15 +64,33 @@ class CncSimulator:
         self._isotropic_dim = n - m
         self._symplectic_matrix = symplectic_matrix(n)
         self._tableau = self.initial_cnc_tableau(n, m)
-        self._tableau_without_phase = self._tableau[:, :-1]
-        self._x_cols = self._tableau[:, :n]
-        self._z_cols = self._tableau[:, n:-1]
-        self._phase_col = self._tableau[:, -1]
-        self._destabilizer_rows = self._tableau_without_phase[: self.isotropic_dim]
-        self._stabilizer_rows = self._tableau_without_phase[
-            self.isotropic_dim : 2 * self.isotropic_dim
-        ]
-        self._jw_elements_rows = self._tableau_without_phase[2 * self.isotropic_dim :]
+        # These are mutable slices into _tableau
+        # that alias particular entries creating multiple mutable references to the same data
+        # try to only mutate through the more specific slices
+        self._tableau_without_phase = cast(
+            np.ndarray[tuple[int, int], np.dtype[np.uint8]], self._tableau[:, :-1]
+        )
+        self._x_cols = cast(
+            np.ndarray[tuple[int, int], np.dtype[np.uint8]], self._tableau[:, :n]
+        )
+        self._z_cols = cast(
+            np.ndarray[tuple[int, int], np.dtype[np.uint8]], self._tableau[:, n:-1]
+        )
+        self._phase_col = cast(
+            np.ndarray[tuple[int], np.dtype[np.uint8]], self._tableau[:, -1]
+        )
+        self._destabilizer_rows = cast(
+            np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+            self._tableau_without_phase[: self.isotropic_dim],
+        )
+        self._stabilizer_rows = cast(
+            np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+            self._tableau_without_phase[self.isotropic_dim : 2 * self.isotropic_dim],
+        )
+        self._jw_elements_rows = cast(
+            np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+            self._tableau_without_phase[2 * self.isotropic_dim :],
+        )
 
         self._rng = np.random.default_rng(seed)
 
@@ -78,7 +122,7 @@ class CncSimulator:
 
         return new_instance
 
-    def __eq__(self, other: CncSimulator) -> bool:
+    def __eq__(self, other: CncSimulator | object) -> bool:
         """Checks equality between two CncSimulator instances.
 
         Two simulators are considered equal if they have the same parameters
@@ -202,6 +246,7 @@ class CncSimulator:
 
         return instance
 
+    #pylint:disable=too-many-locals, too-many-return-statements
     @classmethod
     def is_cnc(cls, n: int, m: int, tableau: np.ndarray) -> bool:
         """Determines whether a given tableau is a valid CNC tableau.
@@ -252,7 +297,7 @@ class CncSimulator:
             destabilizer_stabilizer_commutations, np.eye(isotropic_dim)
         ):
             logging.info(
-                "Destabilizier and stabilizer bases do not form " "symplectic bases."
+                "Destabilizier and stabilizer bases do not form symplectic bases."
             )
             return False
 
@@ -315,7 +360,9 @@ class CncSimulator:
         return True
 
     @staticmethod
-    def initial_cnc_tableau(n: int, m: int) -> np.ndarray:
+    def initial_cnc_tableau(
+        n: int, m: int
+    ) -> np.ndarray[tuple[int, int], np.dtype[np.uint8]]:
         """Generates the initial CNC tableau for the simulator.
         It is the canonical example for a maximal CNC operator
         with n qubits and type m.
@@ -438,6 +485,7 @@ class CncSimulator:
         Raises:
             AssertionError: If the control and target qubits are identical.
         """
+        #pylint:disable=logging-fstring-interpolation
         logging.debug(
             f"Applying CNOT with control_qubit={control_qubit}, "
             f"target_qubit={target_qubit}"
@@ -484,6 +532,7 @@ class CncSimulator:
         self._phase_col ^= self._x_cols[:, qubit] & self._z_cols[:, qubit]
         self._z_cols[:, qubit] ^= self._x_cols[:, qubit]
 
+    #pylint:disable=too-many-branches, too-many-statements
     def measure(self, measurement_basis: np.ndarray) -> int:
         """Performs a Pauli measurement on the simulator in the given
         measurement basis. Measurement basis is a binary vector specifying
@@ -538,7 +587,10 @@ class CncSimulator:
 
             for i in range(self._isotropic_dim):
                 if commutation_with_destabilizers[i] != 0:
-                    e_i = self._stabilizer_rows[i]
+                    e_i = cast(
+                        np.ndarray[tuple[int], np.dtype[np.uint8]],
+                        self._stabilizer_rows[i],
+                    )
                     # phase of the e_i in the stabilizer
                     s_i = self._phase_col[self.isotropic_dim + i]
 
@@ -560,13 +612,13 @@ class CncSimulator:
             a_k = self._jw_elements_rows[k]
             temp_vec = a_k
             # set outcome as the phase of the JW element a_k
-            outcome = self._phase_col[2 * self._isotropic_dim + k]
+            outcome = cast(np.uint8, self._phase_col[2 * self._isotropic_dim + k])
 
             for i in range(self._isotropic_dim):
                 if commutation_with_destabilizers[i] != 0:
                     e_i = self._stabilizer_rows[i]
                     # phase of the e_i in the stabilizer
-                    s_i = self._phase_col[self.isotropic_dim + i]
+                    s_i = cast(np.uint8, self._phase_col[self.isotropic_dim + i])
 
                     outcome = outcome ^ s_i ^ beta(e_i, temp_vec)
                     temp_vec = temp_vec ^ e_i
@@ -583,7 +635,7 @@ class CncSimulator:
         # but not in Omega
         elif commutes_with_stabilizer:
             logging.debug(
-                "Measurement basis commutes with " "the stabilizer but not in Omega."
+                "Measurement basis commutes with the stabilizer but not in Omega."
             )
             t = int(number_of_anticommuting_jw_elements // 2)
 
@@ -664,6 +716,7 @@ class CncSimulator:
                 self._phase_col[anticomm_jw_indexes[2 * i + 1]] = np.uint8(0)
 
             # Rearrange stabilizers and destabilizers
+            #pylint:disable=unnecessary-comprehension
             previous_stabilizer_indexes = [
                 i for i in range(self.isotropic_dim, 2 * self.isotropic_dim)
             ]
@@ -674,9 +727,11 @@ class CncSimulator:
 
             new_stabilizer_indexes = [2 * self._isotropic_dim + 2 * i for i in range(t)]
 
+            #pylint:disable=unnecessary-comprehension
             target_destabilizer_indexes = [
                 i for i in range(2 * self._isotropic_dim, 2 * self.isotropic_dim + t)
             ]
+            #pylint:disable=unnecessary-comprehension
             target_stabilizer_indexes = [
                 i
                 for i in range(
@@ -715,7 +770,7 @@ class CncSimulator:
                 k = indices[0]
             else:
                 raise RuntimeError(
-                    "No Stabilizer element anticommutes with the " "measurement basis."
+                    "No Stabilizer element anticommutes with the measurement basis."
                 )
             p = k + self.isotropic_dim
 
@@ -747,7 +802,7 @@ class CncSimulator:
 
         logging.debug(f"Measurement outcome: {outcome}")
 
-        return outcome
+        return int(outcome)
 
     def _row_add_without_phase(self, i: int, j: int) -> None:
         """Adds row j to row i in the tableau without updating the phase

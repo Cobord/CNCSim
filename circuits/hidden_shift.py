@@ -8,6 +8,7 @@ import warnings
 from pathlib import Path
 from typing import Iterable
 from qiskit import QuantumCircuit
+
 try:
     from .ccz_7T_decomposition import apply_ccz_via_7t_decomposition
 except ImportError:

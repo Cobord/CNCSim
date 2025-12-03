@@ -1,7 +1,19 @@
+"""
+Maintain tableaus for simulation
+as we apply
+- CNOT
+- H
+- S
+- Z-basis measurements
+"""
+
 import random
-from typing import Union, Any
+from typing import Literal, Union, cast
 
 import numpy as np
+from numpy import dtype
+
+from src.useful_types import ReprPretty
 
 
 class ChpSimulator:
@@ -13,12 +25,24 @@ class ChpSimulator:
         https://arxiv.org/abs/quant-ph/0406196
     """
 
-    def __init__(self, num_qubits):
+    __slots__ = ["_n", "_table", "_x", "_z", "_r"]
+
+    def __init__(self, num_qubits: int):
         self._n = num_qubits
-        self._table = np.eye(2 * num_qubits + 1, dtype=bool)
-        self._x = self._table[:, : self._n]
-        self._z = self._table[:, self._n : -1]
-        self._r = self._table[:, -1]
+        self._table = cast(
+            np.ndarray[tuple[int, int], dtype[np.bool]],
+            np.eye(2 * num_qubits + 1, dtype=bool),
+        )
+        # _x, _y, and _z are disjoint slices into _table
+        # that alias particular entries creating multiple mutable references to the same data
+        # try to only mutate through the more specific _x, _z and _r
+        self._x = cast(
+            np.ndarray[tuple[int, int], dtype[np.bool]], self._table[:, : self._n]
+        )
+        self._z = cast(
+            np.ndarray[tuple[int, int], dtype[np.bool]], self._table[:, self._n : -1]
+        )
+        self._r = cast(np.ndarray[tuple[int], dtype[np.bool]], self._table[:, -1])
 
     def cnot(self, control: int, target: int) -> None:
         """Applies a CNOT gate between two qubits.
@@ -111,7 +135,7 @@ class ChpSimulator:
         )
         assert (
             not pauli_phases & 1
-        ), "Expected commuting rows but got {}, {} from \n{}".format(i, k, self)
+        ), f"Expected commuting rows but got {i}, {k} from \n{self}"
         p = (pauli_phases >> 1) & 1
         return bool(self._r[i] ^ self._r[k] ^ p)
 
@@ -144,11 +168,13 @@ class ChpSimulator:
         x_obs = [_row(row) for row in range(self._n, 2 * self._n)]
         return "\n".join(z_obs + sep + x_obs)
 
-    def _repr_pretty_(self, p: Any, cycle: bool) -> None:
+    def _repr_pretty_(self, p: ReprPretty, _cycle: bool) -> None:
         p.text(str(self))
 
 
-def pauli_product_phase(x1: bool, z1: bool, x2: bool, z2: bool) -> int:
+def pauli_product_phase(
+    x1: bool, z1: bool, x2: bool, z2: bool
+) -> Union[Literal[1], Literal[-1], Literal[0]]:
     """Determines the power of i in the product of two Paulis.
 
     For example, X*Y = iZ and so this method would return +1 for X and Y.
@@ -169,21 +195,21 @@ def pauli_product_phase(x1: bool, z1: bool, x2: bool, z2: bool) -> int:
         # -1 phase for YX = -iZ
         # No phase for YY = I
         # +1 phase for YZ = +iX
-        return int(z2) - int(x2)
+        return cast(Union[Literal[1], Literal[-1], Literal[0]], int(z2) - int(x2))
 
     if x1:  # X gate.
         # No phase for XI = X
         # No phase for XX = I
         # +1 phase for XY = iZ
         # -1 phase for XZ = -iY
-        return z2 and 2 * int(x2) - 1
+        return cast(Union[Literal[1], Literal[-1], Literal[0]], z2 and 2 * int(x2) - 1)
 
     if z1:  # Z gate.
         # No phase for ZI = Z
         # +1 phase for ZX = -iY
         # -1 phase for ZY = iX
         # No phase for ZZ = I
-        return x2 and 1 - 2 * int(z2)
+        return cast(Union[Literal[1], Literal[-1], Literal[0]], x2 and 1 - 2 * int(z2))
 
     # Identity gate.
     return 0
@@ -191,6 +217,8 @@ def pauli_product_phase(x1: bool, z1: bool, x2: bool, z2: bool) -> int:
 
 class MeasureResult:
     """A measurement's output and whether it was random or not."""
+
+    __slots__ = ["value", "determined"]
 
     def __init__(self, value: bool, determined: bool):
         self.value = bool(value)
@@ -207,9 +235,11 @@ class MeasureResult:
         return NotImplemented
 
     def __str__(self):
+        #pylint:disable=consider-using-f-string
         return "{} ({})".format(self.value, ["random", "determined"][self.determined])
 
     def __repr__(self):
+        #pylint:disable=consider-using-f-string
         return "MeasureResult(value={!r}, determined={!r})".format(
             self.value, self.determined
         )

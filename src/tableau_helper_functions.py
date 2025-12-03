@@ -1,4 +1,6 @@
+from typing import List, cast
 import numpy as np
+from numpy.typing import NDArray
 from itertools import product
 
 
@@ -151,7 +153,7 @@ def get_pauli_vec_from_index(n: int, index: int) -> np.ndarray:
     return pauli_str_to_binary_vec(pauli_str)
 
 
-def symplectic_matrix(n: int) -> np.ndarray:
+def symplectic_matrix(n: int) -> np.ndarray[tuple[int, int], np.dtype[np.uint8]]:
     """Generates the 2n × 2n symplectic matrix ω over GF(2).
 
     The symplectic matrix S is defined as:
@@ -171,7 +173,10 @@ def symplectic_matrix(n: int) -> np.ndarray:
     zeros = np.zeros((n, n), dtype=np.uint8)
     identity = np.eye(n, dtype=np.uint8)
 
-    return np.block([[zeros, identity], [identity, zeros]])
+    return cast(
+        np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+        np.block([[zeros, identity], [identity, zeros]]),
+    )
 
 
 def find_m_from_omega_size(n: int, omega_size: int) -> int:
@@ -216,6 +221,9 @@ def find_commuting_elements(
     """
     # Convert to tuples for faster lookup and set operations
     # Note: numpy arrays are not hashable
+    # Moving back and forth between numpy and ordinary Python incurs
+    #   language barriers harming performance
+    #   so this is intended to only occur when that is not an issue
     vector_set = {tuple(v.tolist()) for v in vectors}
     isotropic_set = set()
 
@@ -245,18 +253,20 @@ def find_jw_elements(non_stabilizer_vectors: list[np.ndarray]) -> list[np.ndarra
     Returns:
         list[np.ndarray]: List of jw elements.
     """
-    vectors = set(non_stabilizer_vectors)
-    jw_elements = []
+    vectors = set((tuple(nsv.tolist()) for nsv in non_stabilizer_vectors))
+    jw_elements: List[np.ndarray] = []
 
     while len(vectors) > 0:
-        v = vectors.pop()
-        commuting_coset = {w for w in vectors if symplectic_inner_product(v, w) == 0}
+        v = np.array(vectors.pop())
+        commuting_coset = set(
+            (w for w in vectors if symplectic_inner_product(v, np.array(w)) == 0)
+        )
         jw_elements.append(v)
         vectors -= commuting_coset
 
     # To make sure they are in JW elements form we need remove the last element
     # and add the sum of the rest of the elements instead
-    jw_elements[-1] = sum(jw_elements[:-1]) % 2
+    jw_elements[-1] = cast(np.ndarray, sum(jw_elements[:-1]) % 2)
 
     return jw_elements
 
@@ -544,7 +554,7 @@ def is_symplectic(U: np.ndarray, V: np.ndarray, S: np.ndarray) -> bool:
 
     # Check the symplectic condition
     symplectic_check = (U @ S @ V.T) % 2
-    return np.all(symplectic_check == np.eye(dim_U, dtype=int))
+    return bool(np.all(symplectic_check == np.eye(dim_U, dtype=int)))
 
 
 def left_compose(tableau1, tableau2, m1, m2):

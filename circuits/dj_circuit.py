@@ -7,6 +7,7 @@ import warnings
 
 from typing import Literal, Optional
 from qiskit import QuantumCircuit
+
 try:
     from .toff_7T_decomposition import apply_toff_via_7t_decomposition
 except ImportError:

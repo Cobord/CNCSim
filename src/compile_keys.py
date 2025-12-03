@@ -1,3 +1,4 @@
+from typing import Iterable, List
 import numpy as np
 from src import tableau_helper_functions as helper
 import os
@@ -10,7 +11,7 @@ import random
 #################################################################
 
 
-def get_key_probabilities(quasiprobabilities):
+def get_key_probabilities(quasiprobabilities : Iterable[float | np.floating]) -> List[np.floating]:
     """
     Compute and return a normalized probability distribution from a list of quasi-probabilities.
 
@@ -37,7 +38,7 @@ def get_key_probabilities(quasiprobabilities):
     # compute negativity:
     negativity = sum(np.abs(x) for x in quasiprobabilities)
     # renormalized probability distribution:
-    probabilities = [np.abs(q) / negativity for q in quasiprobabilities]
+    probabilities : List[np.floating] = [np.abs(q) / negativity for q in quasiprobabilities]
     # check if normalized:
     if np.round(sum(p for p in probabilities)) != 1.00:
         raise ValueError("Probabilities should be normalized")

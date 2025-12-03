@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 import h5py
 from src import tableau_helper_functions as helper
@@ -5,7 +6,7 @@ from src.cnc_simulator import CncSimulator as cnc
 
 # set n <= K
 K = 4
-filename = "./keys/all_cnc_keys_4.h5"
+filename = Path(".", "keys", "all_cnc_keys_4.h5")
 
 # dictionary for mapping Pauli coefficients to bits:
 to_bits = dict(zip([1, -1], [0, 1]))
