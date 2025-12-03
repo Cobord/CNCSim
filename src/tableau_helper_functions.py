@@ -262,7 +262,9 @@ def find_commuting_elements(
     return isotropic_elements, non_isotropic_elements
 
 
-def find_jw_elements(non_stabilizer_vectors: List[BoolIntVector]) -> List[IntVector]:
+def find_jw_elements(
+    non_stabilizer_vectors: List[BoolIntVector] | List[IntVector],
+) -> List[IntVector]:
     """
     Finds a set of jw elements from the list of non-stabilizer vectors.
 
@@ -355,7 +357,9 @@ def generate_subspace_efficient(vectors: list[IntVector]) -> list[IntVector]:
     return [np.array(v) for v in subspace]
 
 
-def find_independent_subset(vectors: list[BoolIntVector]) -> IntMatrix:
+def find_independent_subset(
+    vectors: List[BoolIntVector] | List[IntVector],
+) -> IntMatrix:
     """
     Finds a maximal linearly independent subset of binary vectors over GF(2).
 
@@ -379,7 +383,9 @@ def find_independent_subset(vectors: list[BoolIntVector]) -> IntMatrix:
     return np.array(independent_subset, dtype=int)
 
 
-def find_complementary_subspace(v_basis: list[BoolIntVector], n: int) -> IntMatrix:
+def find_complementary_subspace(
+    v_basis: List[BoolIntVector] | IntMatrix, n: int
+) -> IntMatrix:
     """
     Finds a basis for the complement subspace W such that U = V ⊕ W.
 
@@ -423,7 +429,7 @@ def find_complementary_subspace(v_basis: list[BoolIntVector], n: int) -> IntMatr
 
 
 def generate_destabilizer_basis(
-    d_basis: List[IntVector], w_basis: List[IntVector]
+    d_basis: List[IntVector] | IntMatrix, w_basis: List[IntVector]
 ) -> List[IntVector]:
     """
     Generates a new destabilizer basis from the provided basis vectors.
@@ -463,7 +469,7 @@ def generate_destabilizer_basis(
 
 
 def symplectic_gram_schmidt(
-    array1: list[IntVector], array2: list[IntVector], r: int
+    array1: list[IntVector] | IntMatrix, array2: list[IntVector] | IntMatrix, r: int
 ) -> tuple[IntVector, IntVector]:
     """
     Performs the Symplectic Gram-Schmidt process on two lists of binary vectors

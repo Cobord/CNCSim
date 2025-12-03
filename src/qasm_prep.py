@@ -197,8 +197,8 @@ class QuCirc:
         try:
             # pylint:disable=used-before-assignment
             q_count = cast(
-                int, q_count
-            )  # pyright: ignore[reportPossiblyUnboundVariable]
+                int, q_count  # pyright: ignore[reportPossiblyUnboundVariable]
+            )
         except UnboundLocalError:
             # pylint:disable=raise-missing-from
             raise RegisterInputError(

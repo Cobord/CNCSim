@@ -57,7 +57,7 @@ def run_qcm(
     clifford_file_name : str, optional
         Filename for the gadgetized circuit (used if msi_qasm_string is not provided).
     hoeffding : bool, optional
-        Whether to compute the number of shots using Hoeffding’s inequality. Default is True.
+        Whether to compute the number of shots using Hoeffding’s inequality. Default is False.
     epsilon : float, optional
         The epsilon parameter for Hoeffding’s inequality. Default is 1e-6.
     prob_fail : float, optional
