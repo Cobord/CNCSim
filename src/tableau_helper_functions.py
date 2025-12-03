@@ -1,10 +1,16 @@
-from typing import List, cast
+"""
+Functions that deal with symplectic vector spaces over GF(2)
+which are used as parameterizing Pauli strings without phases
+"""
+#pylint:disable=invalid-name
+
+from typing import List, Literal, cast
 import numpy as np
-from numpy.typing import NDArray
-from itertools import product
+
+from src.useful_types import BoolIntVector, IntVector, U8Matrix
 
 
-def symplectic_inner_product(u: np.ndarray, v: np.ndarray) -> int:
+def symplectic_inner_product(u: BoolIntVector, v: BoolIntVector) -> Literal[0] | Literal[1]:
     """Computes the symplectic inner product of two binary vectors over GF(2).
 
     The symplectic inner product is defined as:
@@ -27,7 +33,8 @@ def symplectic_inner_product(u: np.ndarray, v: np.ndarray) -> int:
     return (uz.dot(vx) - ux.dot(vz)) % 2
 
 
-def beta(u: np.ndarray, v: np.ndarray, skip_commutation_check: bool = False) -> int:
+def beta(u: BoolIntVector, v: BoolIntVector, skip_commutation_check: bool = False) \
+    -> Literal[0] | Literal[1]:
     """
     Computes the beta value which determines the sign of the product of two
     commuting Pauli operators.
@@ -70,7 +77,7 @@ def beta(u: np.ndarray, v: np.ndarray, skip_commutation_check: bool = False) -> 
     return tilde_beta // 2
 
 
-def pauli_binary_vec_to_str(u: np.ndarray) -> str:
+def pauli_binary_vec_to_str(u: BoolIntVector) -> str:
     """Converts binary vector of a Pauli operator to its string representation.
 
     For example [1, 0, 0, 1] is converted to "XZ".
@@ -86,11 +93,13 @@ def pauli_binary_vec_to_str(u: np.ndarray) -> str:
 
     n = len(u) // 2
     for i in range(n):
-        if u[i] == 1 and u[i + n] == 1:
+        x_part = cast(np.integer | np.bool, u[i])
+        z_part = cast(np.integer | np.bool, u[i+n])
+        if x_part == 1 and z_part == 1:
             pauli_str += "Y"
-        elif u[i] == 1:
+        elif x_part == 1:
             pauli_str += "X"
-        elif u[i + n] == 1:
+        elif z_part == 1:
             pauli_str += "Z"
         else:
             pauli_str += "I"
@@ -98,7 +107,7 @@ def pauli_binary_vec_to_str(u: np.ndarray) -> str:
     return pauli_str
 
 
-def pauli_str_to_binary_vec(pauli_str: str) -> np.ndarray:
+def pauli_str_to_binary_vec(pauli_str: str) -> IntVector:
     """
     Converts the string representation of a Pauli operator to its binary
     vector.
@@ -153,7 +162,7 @@ def get_pauli_vec_from_index(n: int, index: int) -> np.ndarray:
     return pauli_str_to_binary_vec(pauli_str)
 
 
-def symplectic_matrix(n: int) -> np.ndarray[tuple[int, int], np.dtype[np.uint8]]:
+def symplectic_matrix(n: int) -> U8Matrix:
     """Generates the 2n × 2n symplectic matrix ω over GF(2).
 
     The symplectic matrix S is defined as:
@@ -174,7 +183,7 @@ def symplectic_matrix(n: int) -> np.ndarray[tuple[int, int], np.dtype[np.uint8]]
     identity = np.eye(n, dtype=np.uint8)
 
     return cast(
-        np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+        U8Matrix,
         np.block([[zeros, identity], [identity, zeros]]),
     )
 
@@ -557,8 +566,8 @@ def is_symplectic(U: np.ndarray, V: np.ndarray, S: np.ndarray) -> bool:
     return bool(np.all(symplectic_check == np.eye(dim_U, dtype=int)))
 
 
-def left_compose(tableau1, tableau2, m1, m2):
-
+# pylint:disable=too-many-locals
+def _left_compose(tableau1, tableau2, m1, m2):
     # check if composition is valid:
     if m1 != 0:
         raise ValueError("Composition is not valid. Left tableau must be a stabilizer.")
@@ -603,7 +612,8 @@ def left_compose(tableau1, tableau2, m1, m2):
     return tableau
 
 
-def right_compose(tableau1, tableau2, m1, m2):
+# pylint:disable=too-many-locals
+def _right_compose(tableau1, tableau2, m1, m2):
 
     # check if composition is valid:
     if m2 != 0:
@@ -653,10 +663,12 @@ def right_compose(tableau1, tableau2, m1, m2):
 
 
 def compose_tableaus(tableau1, tableau2, m1, m2):
+    """
+    Composition where one of the two is a stabilizer tableau
+    """
     # check if composition is valid:
     if (m1 != 0) and (m2 != 0):
         raise ValueError("Composition is not valid. One of m1 or m2 must be 0.")
-    elif (m1 == 0) and (m2 != 0):
-        return left_compose(tableau1, tableau2, m1, m2)
-    else:
-        return right_compose(tableau1, tableau2, m1, m2)
+    if (m1 == 0) and (m2 != 0):
+        return _left_compose(tableau1, tableau2, m1, m2)
+    return _right_compose(tableau1, tableau2, m1, m2)

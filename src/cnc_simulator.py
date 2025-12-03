@@ -20,6 +20,7 @@ from src.tableau_helper_functions import (
     pauli_binary_vec_to_str,
     beta,
 )
+from src.useful_types import U8Matrix, U8Vector
 
 GF2 = galois.GF(2)
 
@@ -68,27 +69,27 @@ class CncSimulator:
         # that alias particular entries creating multiple mutable references to the same data
         # try to only mutate through the more specific slices
         self._tableau_without_phase = cast(
-            np.ndarray[tuple[int, int], np.dtype[np.uint8]], self._tableau[:, :-1]
+            U8Matrix, self._tableau[:, :-1]
         )
         self._x_cols = cast(
-            np.ndarray[tuple[int, int], np.dtype[np.uint8]], self._tableau[:, :n]
+            U8Matrix, self._tableau[:, :n]
         )
         self._z_cols = cast(
-            np.ndarray[tuple[int, int], np.dtype[np.uint8]], self._tableau[:, n:-1]
+            U8Matrix, self._tableau[:, n:-1]
         )
         self._phase_col = cast(
-            np.ndarray[tuple[int], np.dtype[np.uint8]], self._tableau[:, -1]
+            U8Vector, self._tableau[:, -1]
         )
         self._destabilizer_rows = cast(
-            np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+            U8Matrix,
             self._tableau_without_phase[: self.isotropic_dim],
         )
         self._stabilizer_rows = cast(
-            np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+            U8Matrix,
             self._tableau_without_phase[self.isotropic_dim : 2 * self.isotropic_dim],
         )
         self._jw_elements_rows = cast(
-            np.ndarray[tuple[int, int], np.dtype[np.uint8]],
+            U8Matrix,
             self._tableau_without_phase[2 * self.isotropic_dim :],
         )
 
@@ -362,7 +363,7 @@ class CncSimulator:
     @staticmethod
     def initial_cnc_tableau(
         n: int, m: int
-    ) -> np.ndarray[tuple[int, int], np.dtype[np.uint8]]:
+    ) -> U8Matrix:
         """Generates the initial CNC tableau for the simulator.
         It is the canonical example for a maximal CNC operator
         with n qubits and type m.
@@ -588,7 +589,7 @@ class CncSimulator:
             for i in range(self._isotropic_dim):
                 if commutation_with_destabilizers[i] != 0:
                     e_i = cast(
-                        np.ndarray[tuple[int], np.dtype[np.uint8]],
+                        U8Vector,
                         self._stabilizer_rows[i],
                     )
                     # phase of the e_i in the stabilizer
