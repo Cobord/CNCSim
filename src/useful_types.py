@@ -21,10 +21,15 @@ class ReprPretty(Protocol):
 type U8Matrix = np.ndarray[tuple[int, int], np.dtype[np.uint8]]
 type U8Vector = np.ndarray[tuple[int], np.dtype[np.uint8]]
 
-type IntMatrix = np.ndarray[tuple[int, int], np.dtype[np.integer]]
-type IntVector = np.ndarray[tuple[int], np.dtype[np.integer]]
+type IntMatrix = np.ndarray[tuple[int, int], np.dtype[np.integer | np.signedinteger]]
+type IntVector = np.ndarray[tuple[int], np.dtype[np.integer | np.signedinteger]]
 
-type BoolIntVector = np.ndarray[tuple[int], np.dtype[np.integer | np.bool]]
+type BoolIntVector = np.ndarray[
+    tuple[int], np.dtype[np.integer | np.bool | np.signedinteger]
+]
+type BoolIntMatrix = np.ndarray[
+    tuple[int, int], np.dtype[np.integer | np.bool | np.signedinteger]
+]
 
 type BoolMatrix = np.ndarray[tuple[int, int], np.dtype[np.bool]]
 type BoolVector = np.ndarray[tuple[int], np.dtype[np.bool]]

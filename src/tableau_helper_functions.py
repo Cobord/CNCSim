@@ -5,10 +5,16 @@ which are used as parameterizing Pauli strings without phases
 
 # pylint:disable=invalid-name
 
-from typing import List, Literal, cast
+from typing import List, Literal, Sequence, Set, Tuple, cast
 import numpy as np
 
-from src.useful_types import BoolIntVector, IntVector, U8Matrix
+from src.useful_types import (
+    BoolIntMatrix,
+    BoolIntVector,
+    IntMatrix,
+    IntVector,
+    U8Matrix,
+)
 
 
 def symplectic_inner_product(
@@ -97,8 +103,8 @@ def pauli_binary_vec_to_str(u: BoolIntVector) -> str:
 
     n = len(u) // 2
     for i in range(n):
-        x_part = cast(np.integer | np.bool, u[i])
-        z_part = cast(np.integer | np.bool, u[i + n])
+        x_part = cast(np.integer | np.bool | np.signedinteger, u[i])
+        z_part = cast(np.integer | np.bool | np.signedinteger, u[i + n])
         if x_part == 1 and z_part == 1:
             pauli_str += "Y"
         elif x_part == 1:
@@ -143,7 +149,7 @@ def pauli_str_to_binary_vec(pauli_str: str) -> IntVector:
     return np.concatenate((x_part, z_part))
 
 
-def get_pauli_vec_from_index(n: int, index: int) -> np.ndarray:
+def get_pauli_vec_from_index(n: int, index: int) -> IntVector:
     """
     Returns the binary vector of a n-qubit Pauli operator from its index in the
     lexicographic order.
@@ -216,8 +222,8 @@ def find_m_from_omega_size(n: int, omega_size: int) -> int:
 
 
 def find_commuting_elements(
-    vectors: list[np.ndarray],
-) -> tuple[list[np.ndarray], list[np.ndarray]]:
+    vectors: Sequence[IntVector],
+) -> tuple[List[IntVector], List[IntVector]]:
     """
     Seperates the list of vectors to the ones that commute with the all
     vectors (isotropic) and the others(non_isotropic). Either list can be
@@ -256,7 +262,7 @@ def find_commuting_elements(
     return isotropic_elements, non_isotropic_elements
 
 
-def find_jw_elements(non_stabilizer_vectors: list[np.ndarray]) -> list[np.ndarray]:
+def find_jw_elements(non_stabilizer_vectors: List[BoolIntVector]) -> List[IntVector]:
     """
     Finds a set of jw elements from the list of non-stabilizer vectors.
 
@@ -267,7 +273,7 @@ def find_jw_elements(non_stabilizer_vectors: list[np.ndarray]) -> list[np.ndarra
         list[np.ndarray]: List of jw elements.
     """
     vectors = set((tuple(nsv.tolist()) for nsv in non_stabilizer_vectors))
-    jw_elements: List[np.ndarray] = []
+    jw_elements: List[IntVector] = []
 
     while len(vectors) > 0:
         v = np.array(vectors.pop())
@@ -279,12 +285,12 @@ def find_jw_elements(non_stabilizer_vectors: list[np.ndarray]) -> list[np.ndarra
 
     # To make sure they are in JW elements form we need remove the last element
     # and add the sum of the rest of the elements instead
-    jw_elements[-1] = cast(np.ndarray, sum(jw_elements[:-1]) % 2)
+    jw_elements[-1] = cast(IntVector, sum(jw_elements[:-1]) % 2)
 
     return jw_elements
 
 
-def gaussian_elimination_mod2(A: np.ndarray) -> np.ndarray:
+def gaussian_elimination_mod2(A: BoolIntMatrix) -> IntMatrix:
     """
     Performs Gaussian elimination on a binary matrix A over GF(2).
 
@@ -326,7 +332,7 @@ def gaussian_elimination_mod2(A: np.ndarray) -> np.ndarray:
     return basis
 
 
-def generate_subspace_efficient(vectors: list[np.ndarray]) -> list[np.ndarray]:
+def generate_subspace_efficient(vectors: list[IntVector]) -> list[IntVector]:
     """
     Generates the subspace spanned by the input vectors over GF(2) efficiently
     using Gaussian elimination.
@@ -337,7 +343,7 @@ def generate_subspace_efficient(vectors: list[np.ndarray]) -> list[np.ndarray]:
     Returns:
         List[np.ndarray]: List of binary vectors in the generated subspace.
     """
-    subspace = set()
+    subspace: Set[Tuple[int, ...]] = set()
     subspace.add(tuple(np.zeros(len(vectors[0]), dtype=int)))
 
     for v in vectors:
@@ -349,7 +355,7 @@ def generate_subspace_efficient(vectors: list[np.ndarray]) -> list[np.ndarray]:
     return [np.array(v) for v in subspace]
 
 
-def find_independent_subset(vectors: list[np.ndarray]) -> np.ndarray:
+def find_independent_subset(vectors: list[BoolIntVector]) -> IntMatrix:
     """
     Finds a maximal linearly independent subset of binary vectors over GF(2).
 
@@ -373,7 +379,7 @@ def find_independent_subset(vectors: list[np.ndarray]) -> np.ndarray:
     return np.array(independent_subset, dtype=int)
 
 
-def find_complementary_subspace(v_basis: list[np.ndarray], n: int) -> np.ndarray:
+def find_complementary_subspace(v_basis: list[BoolIntVector], n: int) -> IntMatrix:
     """
     Finds a basis for the complement subspace W such that U = V ⊕ W.
 
@@ -417,8 +423,8 @@ def find_complementary_subspace(v_basis: list[np.ndarray], n: int) -> np.ndarray
 
 
 def generate_destabilizer_basis(
-    d_basis: list[np.ndarray], w_basis: list[np.ndarray]
-) -> list[np.ndarray]:
+    d_basis: List[IntVector], w_basis: List[IntVector]
+) -> List[IntVector]:
     """
     Generates a new destabilizer basis from the provided basis vectors.
 
@@ -457,8 +463,8 @@ def generate_destabilizer_basis(
 
 
 def symplectic_gram_schmidt(
-    array1: list[np.ndarray], array2: list[np.ndarray], r: int
-) -> tuple[np.ndarray, np.ndarray]:
+    array1: list[IntVector], array2: list[IntVector], r: int
+) -> tuple[IntVector, IntVector]:
     """
     Performs the Symplectic Gram-Schmidt process on two lists of binary vectors
     over GF(2).
