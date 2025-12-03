@@ -2,7 +2,8 @@
 Functions that deal with symplectic vector spaces over GF(2)
 which are used as parameterizing Pauli strings without phases
 """
-#pylint:disable=invalid-name
+
+# pylint:disable=invalid-name
 
 from typing import List, Literal, cast
 import numpy as np
@@ -10,7 +11,9 @@ import numpy as np
 from src.useful_types import BoolIntVector, IntVector, U8Matrix
 
 
-def symplectic_inner_product(u: BoolIntVector, v: BoolIntVector) -> Literal[0] | Literal[1]:
+def symplectic_inner_product(
+    u: BoolIntVector, v: BoolIntVector
+) -> Literal[0] | Literal[1]:
     """Computes the symplectic inner product of two binary vectors over GF(2).
 
     The symplectic inner product is defined as:
@@ -33,8 +36,9 @@ def symplectic_inner_product(u: BoolIntVector, v: BoolIntVector) -> Literal[0] |
     return (uz.dot(vx) - ux.dot(vz)) % 2
 
 
-def beta(u: BoolIntVector, v: BoolIntVector, skip_commutation_check: bool = False) \
-    -> Literal[0] | Literal[1]:
+def beta(
+    u: BoolIntVector, v: BoolIntVector, skip_commutation_check: bool = False
+) -> Literal[0] | Literal[1]:
     """
     Computes the beta value which determines the sign of the product of two
     commuting Pauli operators.
@@ -94,7 +98,7 @@ def pauli_binary_vec_to_str(u: BoolIntVector) -> str:
     n = len(u) // 2
     for i in range(n):
         x_part = cast(np.integer | np.bool, u[i])
-        z_part = cast(np.integer | np.bool, u[i+n])
+        z_part = cast(np.integer | np.bool, u[i + n])
         if x_part == 1 and z_part == 1:
             pauli_str += "Y"
         elif x_part == 1:

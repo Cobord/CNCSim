@@ -11,7 +11,6 @@ import random
 from typing import Literal, Union, cast
 
 import numpy as np
-from numpy import dtype
 
 from src.useful_types import BoolMatrix, BoolVector, ReprPretty
 
@@ -36,12 +35,8 @@ class ChpSimulator:
         # _x, _y, and _z are disjoint slices into _table
         # that alias particular entries creating multiple mutable references to the same data
         # try to only mutate through the more specific _x, _z and _r
-        self._x = cast(
-            BoolMatrix, self._table[:, : self._n]
-        )
-        self._z = cast(
-            BoolMatrix, self._table[:, self._n : -1]
-        )
+        self._x = cast(BoolMatrix, self._table[:, : self._n])
+        self._z = cast(BoolMatrix, self._table[:, self._n : -1])
         self._r = cast(BoolVector, self._table[:, -1])
 
     def cnot(self, control: int, target: int) -> None:
@@ -235,11 +230,11 @@ class MeasureResult:
         return NotImplemented
 
     def __str__(self):
-        #pylint:disable=consider-using-f-string
+        # pylint:disable=consider-using-f-string
         return "{} ({})".format(self.value, ["random", "determined"][self.determined])
 
     def __repr__(self):
-        #pylint:disable=consider-using-f-string
+        # pylint:disable=consider-using-f-string
         return "MeasureResult(value={!r}, determined={!r})".format(
             self.value, self.determined
         )

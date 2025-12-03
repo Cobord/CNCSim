@@ -1,11 +1,13 @@
+# pylint:disable=invalid-name
+import contextlib
 import numpy as np
 import h5py
 from src import tableau_helper_functions as helper
 from src import cnc_simulator as cnc
-import contextlib
+
 
 # Redirect printed output to a file
-with open("generating_stab_tableaus.txt", "w") as f_out:
+with open("generating_stab_tableaus.txt", "w", encoding="utf8") as f_out:
     with contextlib.redirect_stdout(f_out):
         # set n <= K
         filename = "./keys/all_stab_keys_4.h5"

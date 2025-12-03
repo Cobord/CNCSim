@@ -5,6 +5,7 @@ elements of the CNC operator. Clifford gates, specifically CNOT, Hadamard,
 and Phase gates, can be applied to the simulator. Measurements can be
 performed in the Pauli basis.
 """
+
 # pylint:disable=invalid-name, logging-fstring-interpolation
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from src.useful_types import U8Matrix, U8Vector
 GF2 = galois.GF(2)
 
 
-#pylint:disable=too-many-instance-attributes
+# pylint:disable=too-many-instance-attributes
 class CncSimulator:
     """Simulator of maximal CNC operators using tableau representation. The
     tableau representation contains the stabilizer, destabilizer, and JW
@@ -68,18 +69,10 @@ class CncSimulator:
         # These are mutable slices into _tableau
         # that alias particular entries creating multiple mutable references to the same data
         # try to only mutate through the more specific slices
-        self._tableau_without_phase = cast(
-            U8Matrix, self._tableau[:, :-1]
-        )
-        self._x_cols = cast(
-            U8Matrix, self._tableau[:, :n]
-        )
-        self._z_cols = cast(
-            U8Matrix, self._tableau[:, n:-1]
-        )
-        self._phase_col = cast(
-            U8Vector, self._tableau[:, -1]
-        )
+        self._tableau_without_phase = cast(U8Matrix, self._tableau[:, :-1])
+        self._x_cols = cast(U8Matrix, self._tableau[:, :n])
+        self._z_cols = cast(U8Matrix, self._tableau[:, n:-1])
+        self._phase_col = cast(U8Vector, self._tableau[:, -1])
         self._destabilizer_rows = cast(
             U8Matrix,
             self._tableau_without_phase[: self.isotropic_dim],
@@ -247,7 +240,7 @@ class CncSimulator:
 
         return instance
 
-    #pylint:disable=too-many-locals, too-many-return-statements
+    # pylint:disable=too-many-locals, too-many-return-statements
     @classmethod
     def is_cnc(cls, n: int, m: int, tableau: np.ndarray) -> bool:
         """Determines whether a given tableau is a valid CNC tableau.
@@ -361,9 +354,7 @@ class CncSimulator:
         return True
 
     @staticmethod
-    def initial_cnc_tableau(
-        n: int, m: int
-    ) -> U8Matrix:
+    def initial_cnc_tableau(n: int, m: int) -> U8Matrix:
         """Generates the initial CNC tableau for the simulator.
         It is the canonical example for a maximal CNC operator
         with n qubits and type m.
@@ -486,7 +477,7 @@ class CncSimulator:
         Raises:
             AssertionError: If the control and target qubits are identical.
         """
-        #pylint:disable=logging-fstring-interpolation
+        # pylint:disable=logging-fstring-interpolation
         logging.debug(
             f"Applying CNOT with control_qubit={control_qubit}, "
             f"target_qubit={target_qubit}"
@@ -533,7 +524,7 @@ class CncSimulator:
         self._phase_col ^= self._x_cols[:, qubit] & self._z_cols[:, qubit]
         self._z_cols[:, qubit] ^= self._x_cols[:, qubit]
 
-    #pylint:disable=too-many-branches, too-many-statements
+    # pylint:disable=too-many-branches, too-many-statements
     def measure(self, measurement_basis: np.ndarray) -> int:
         """Performs a Pauli measurement on the simulator in the given
         measurement basis. Measurement basis is a binary vector specifying
@@ -717,7 +708,7 @@ class CncSimulator:
                 self._phase_col[anticomm_jw_indexes[2 * i + 1]] = np.uint8(0)
 
             # Rearrange stabilizers and destabilizers
-            #pylint:disable=unnecessary-comprehension
+            # pylint:disable=unnecessary-comprehension
             previous_stabilizer_indexes = [
                 i for i in range(self.isotropic_dim, 2 * self.isotropic_dim)
             ]
@@ -728,11 +719,11 @@ class CncSimulator:
 
             new_stabilizer_indexes = [2 * self._isotropic_dim + 2 * i for i in range(t)]
 
-            #pylint:disable=unnecessary-comprehension
+            # pylint:disable=unnecessary-comprehension
             target_destabilizer_indexes = [
                 i for i in range(2 * self._isotropic_dim, 2 * self.isotropic_dim + t)
             ]
-            #pylint:disable=unnecessary-comprehension
+            # pylint:disable=unnecessary-comprehension
             target_stabilizer_indexes = [
                 i
                 for i in range(

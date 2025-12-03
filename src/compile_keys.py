@@ -11,7 +11,9 @@ import random
 #################################################################
 
 
-def get_key_probabilities(quasiprobabilities : Iterable[float | np.floating]) -> List[np.floating]:
+def get_key_probabilities(
+    quasiprobabilities: Iterable[float | np.floating],
+) -> List[np.floating]:
     """
     Compute and return a normalized probability distribution from a list of quasi-probabilities.
 
@@ -38,7 +40,9 @@ def get_key_probabilities(quasiprobabilities : Iterable[float | np.floating]) ->
     # compute negativity:
     negativity = sum(np.abs(x) for x in quasiprobabilities)
     # renormalized probability distribution:
-    probabilities : List[np.floating] = [np.abs(q) / negativity for q in quasiprobabilities]
+    probabilities: List[np.floating] = [
+        np.abs(q) / negativity for q in quasiprobabilities
+    ]
     # check if normalized:
     if np.round(sum(p for p in probabilities)) != 1.00:
         raise ValueError("Probabilities should be normalized")
