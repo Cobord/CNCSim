@@ -77,10 +77,32 @@ class AntiCommutingSet:
     
     def jordan_wigner_extend(self):
         """
-        Extend this anticommuting set to a Jordan-Wigner set
+        Extend this non-maximal anticommuting set to a Jordan-Wigner set
+        but if it is already Jordan-Wigner do not change it
+        if it is maximal but not already Jordan-Wigner, then it cannot be extended
+        to a Jordan-Wigner set by just adding more elements to the set
         """
         if self.is_jordan_wigner:
             return
+        if self.is_maximal():
+            raise ValueError("It is maximal, but not already a Jordan-Wigner set.")
+        if self._set_size == 2 * self._n:
+            self.basis_to_maximal()
+            return
+        if self._set_size % 2 == 0:
+            # just find any a_(N+1) that anticommutes with everything
+            # and it will be maximal
+            any_anticommuting = self.anticommutes_with_everything()
+            assert any_anticommuting is not None, \
+                "There does exist something which anticommutes with everything"
+            self._set_elements = np.vstack((self._set_elements, any_anticommuting))
+            self._set_elements = cast(BoolMatrix,self._set_elements)
+            self.jordan_wigner_extend()
+            return
+        else:
+            raise NotImplementedError
+
+    def anticommutes_with_everything(self) -> Optional[BoolVector]:
         raise NotImplementedError
 
     def jordan_wigner_coefficients(self, b: BoolIntVector, omitted_vector: Optional[int] = None) -> BoolIntVector:

@@ -4,16 +4,29 @@ storing tableau's as np arrays
 for safety of manipulations
 and flexibility to modification
 """
+from __future__ import annotations
 
 from typing import List, Optional, Self, Tuple, Union, cast
 
 import numpy as np
 
-from src.tableau_helper_functions import symplectic_inner_product
-from src.useful_types import BoolIntMatrix, BoolIntVector, BoolMatrix
+from src.tableau_helper_functions import beta, symplectic_inner_product
+from src.useful_types import BoolIntMatrix, BoolIntVector, BoolMatrix, BoolVector
 
 
 class CNCSet:
+    """
+    Everything in this CNC set is expressible as a binary tree
+    where at each internal vertex of the tree the element of Omega
+    is the sum of the elements associated to the two children
+    which commute
+    and the leaves are decorated with the vector
+    in the relevant row of _set_elements
+    They are all in E_n = BoolVector of length 2*self._n
+    self._preomega_size is the number of generating decorations of leaves
+    self._is_full_set is if we don't need any trees and everything in Omega
+    can be expressed as a single leaf
+    """
     __slots__ = ["_set_elements", "_n", "_preomega_size", "_value_assignment", "_is_maximal", "_is_full_set"]
     
     def __init__(self,
@@ -63,6 +76,30 @@ class CNCSet:
                 "If you are providing a value assignment, you must provide it on all elements"
             self._value_assignment = value_assignment
 
+    @property
+    def is_empty(self) -> bool:
+        """
+        The empty set Omega is vacuously closed
+        and decorating it with a value assignment is
+        also vacuous
+        """
+        return self._preomega_size == 0
+
+    @staticmethod
+    def empty_set() -> CNCSet:
+        to_return = CNCSet([], [])
+        to_return.declare_maximality(False)
+        to_return.declare_full_set(True)
+        return to_return
+
+    @staticmethod
+    def zero_set(n_val: int) -> CNCSet:
+        zero_vector = cast(BoolVector,np.zeros((1,2*n_val),dtype=np.bool))
+        to_return = CNCSet([zero_vector], [False])
+        to_return.declare_maximality(False)
+        to_return.declare_full_set(True)
+        return to_return
+
     def declare_full_set(self, is_full_set: bool):
         """
         Declare that the stored vectors are or are not all of Omega
@@ -85,6 +122,21 @@ class CNCSet:
             raise ValueError("We already declared that we know it's maximality property. "
                              "This would be changing it to be inconsistent with that.")
 
+    def associated_vector(self, which_in_preomega: Union[int,Tuple[int,int]]) -> BoolVector:
+        if isinstance(which_in_preomega, int):
+            assert 0 <= which_in_preomega < self._preomega_size, \
+                "The desired element does not exist as in index of what is stored about Omega"
+            return self._set_elements[which_in_preomega]
+        (i,j) = which_in_preomega
+        assert 0 <= i < self._preomega_size, \
+                "The desired element does not exist as in index of what is stored about Omega"
+        assert 0 <= j < self._preomega_size, \
+                "The desired element does not exist as in index of what is stored about Omega"
+        if symplectic_inner_product(self._set_elements[i], self._set_elements[j]) != 0:
+            raise ValueError("You are asking for the value assignment of two indices which are stored in Omega," \
+                "but they do not commute so the sum does not have to be in Omega")
+        return self.associated_vector(i) + self.associated_vector(j)
+
     def value_assignment(self, which_in_preomega: Union[int,Tuple[int,int]]) -> Optional[bool]:
         if self.value_assignment is None:
             return None
@@ -98,14 +150,16 @@ class CNCSet:
                 "The desired element does not exist as in index of what is stored about Omega"
         assert 0 <= j < self._preomega_size, \
                 "The desired element does not exist as in index of what is stored about Omega"
-        if symplectic_inner_product(self._set_elements[i], self._set_elements[j]) != 0:
+        ith_vector = cast(BoolVector,self._set_elements[i])
+        jth_vector = cast(BoolVector,self._set_elements[j])
+        if symplectic_inner_product(ith_vector, jth_vector) != 0:
             raise ValueError("You are asking for the value assignment of two indices which are stored in Omega," \
                 "but they do not commute so the sum does not have to be in Omega")
-        return (self._value_assignment[i] + self._value_assignment[j]) % 2 == 1
+        return (self._value_assignment[i] + self._value_assignment[j] + beta(ith_vector,jth_vector)) % 2 == 1
 
-    def valuation_b_shift(self, b: int):
+    def value_assignment_b_shift(self, b: int):
         """
-        Replace the valuation gamma for this `CNCSet`
+        Replace the value assignment gamma for this `CNCSet`
         with gamma + [v_b, - ]
         where v_b is the vector associated with the b'th stored element of the set
         """
@@ -115,11 +169,12 @@ class CNCSet:
                 for (idx,gamma_idx) in enumerate(self._value_assignment)
             ]
 
-    def valuation_b_complement(self, b: BoolIntVector) -> Self:
+    def value_assignment_b_complement(self, b: BoolIntVector, r: bool) -> Self:
         """
         Given a b that is not in Omega
-        produce the CNC set with valuation
+        produce the CNC set with value assignment
         Omega(b) = <b> + <b>^perp bigcap Omega
+        and value assignment is self.value_assignment star r
         """
         assert b.shape == (2*self._n,), f"The provided b was not in E_{self._n}"
         raise NotImplementedError
