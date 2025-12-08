@@ -48,6 +48,7 @@ def beta(
     """
     Computes the beta value which determines the sign of the product of two
     commuting Pauli operators.
+    T_u T_v = (-1)^(beta(u,v)) T_(u+v)
 
     Args:
         u (np.ndarray): Binary vector of a Pauli operator.
@@ -73,6 +74,8 @@ def beta(
     x_terms = (ux ^ vx) % 2
     z_terms = (uz ^ vz) % 2
 
+    # Compute phi(u), phi(v) and phi(u+v) which
+    # are the phase factors in front of X^... Z^... in T_u, T_v, T_(u+v)
     u_phase = ux.dot(uz) % 4
     v_phase = vx.dot(vz) % 4
     combined_phase = x_terms.dot(z_terms) % 4
